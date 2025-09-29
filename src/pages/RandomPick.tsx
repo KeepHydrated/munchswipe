@@ -120,6 +120,11 @@ const RandomPick = () => {
                 )}
                 <CardHeader className="text-center pb-4">
                   <CardTitle className="text-3xl">{selectedRestaurant.name}</CardTitle>
+                  {selectedRestaurant.cuisine && (
+                    <p className="text-lg text-muted-foreground capitalize mt-2">
+                      {selectedRestaurant.cuisine}
+                    </p>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-4">
@@ -137,16 +142,6 @@ const RandomPick = () => {
                       <div className="flex items-center space-x-3">
                         <Star className="w-5 h-5 text-primary flex-shrink-0" fill="currentColor" />
                         <p className="text-lg font-semibold">{selectedRestaurant.rating} / 5</p>
-                      </div>
-                    )}
-
-                    {selectedRestaurant.cuisine && (
-                      <div className="flex items-center space-x-3">
-                        <div className="px-4 py-2 bg-primary/10 rounded-full">
-                          <span className="text-primary font-medium capitalize">
-                            {selectedRestaurant.cuisine}
-                          </span>
-                        </div>
                       </div>
                     )}
 
