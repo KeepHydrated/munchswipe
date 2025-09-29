@@ -31,7 +31,7 @@ const RestaurantFinder = () => {
   const [loading, setLoading] = useState(false);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [apiEndpoint, setApiEndpoint] = useState('');
-  const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
+  const [googleMapsApiKey, setGoogleMapsApiKey] = useState('AIzaSyASk-OpxAIgawBXmdyFi-C7QMMPFDq7jlU');
   const [showApiInputs, setShowApiInputs] = useState(true);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   
