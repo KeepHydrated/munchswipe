@@ -106,7 +106,7 @@ const RestaurantFinder = () => {
       const service = new google.maps.places.PlacesService(map);
       const request = {
         location: location,
-        radius: 16093, // 10 miles in meters
+        radius: 8047, // 5 miles in meters (reduced from 10 miles for closer results)
         type: 'restaurant'
       };
 
