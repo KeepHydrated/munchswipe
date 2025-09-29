@@ -2,8 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Navigation } from 'lucide-react';
+import { MapPin, Navigation, Shuffle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useRestaurants } from '@/contexts/RestaurantContext';
+import { Link } from 'react-router-dom';
 import GoogleMap from '@/components/GoogleMap';
 import RestaurantList from '@/components/RestaurantList';
 import { loadGoogleMaps } from '@/lib/googleMapsLoader';
@@ -21,15 +23,9 @@ interface Restaurant {
   longitude: number;
 }
 
-interface UserLocation {
-  latitude: number;
-  longitude: number;
-}
-
 const RestaurantFinder = () => {
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const { restaurants, setRestaurants, userLocation, setUserLocation } = useRestaurants();
   const [loading, setLoading] = useState(false);
-  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [googleMapsApiKey] = useState('AIzaSyASk-OpxAIgawBXmdyFi-C7QMMPFDq7jlU');
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   
@@ -211,6 +207,16 @@ const RestaurantFinder = () => {
               >
                 List
               </Button>
+              <Link to="/random">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="transition-smooth hover:shadow-glow"
+                >
+                  <Shuffle className="w-4 h-4 mr-2" />
+                  Random Pick
+                </Button>
+              </Link>
               <Button
                 variant="outline"
                 size="sm"
