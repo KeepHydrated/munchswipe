@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +37,13 @@ const RandomPick = () => {
       return updated.slice(-maxHistory);
     });
   };
+
+  // Automatically pick a random restaurant when restaurants are available
+  useEffect(() => {
+    if (restaurants.length > 0 && !selectedRestaurant) {
+      getRandomRestaurant();
+    }
+  }, [restaurants.length]);
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -81,17 +88,6 @@ const RandomPick = () => {
           </Card>
         ) : (
           <div className="space-y-8">
-            <div className="flex justify-center">
-              <Button 
-                onClick={getRandomRestaurant}
-                size="lg"
-                className="bg-gradient-primary hover:shadow-warm transition-bounce text-lg px-8 py-6"
-              >
-                <Shuffle className="w-6 h-6 mr-2" />
-                Pick Random Restaurant
-              </Button>
-            </div>
-
             {selectedRestaurant && (
               <Card className="shadow-warm animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {selectedRestaurant.photoUrl ? (
