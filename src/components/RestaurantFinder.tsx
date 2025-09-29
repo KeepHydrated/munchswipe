@@ -22,6 +22,8 @@ interface Restaurant {
   latitude: number;
   longitude: number;
   photoUrl?: string;
+  openNow?: boolean;
+  openingHours?: string[];
 }
 
 const RestaurantFinder = () => {
@@ -135,6 +137,10 @@ const RestaurantFinder = () => {
               console.log(`No photos available for ${place.name}`);
             }
 
+            // Get opening hours if available
+            const openNow = place.opening_hours?.open_now;
+            const openingHours = place.opening_hours?.weekday_text;
+
             return {
               id: place.place_id || '',
               name: place.name || 'Unknown Restaurant',
@@ -147,6 +153,8 @@ const RestaurantFinder = () => {
               latitude: place.geometry?.location?.lat() || userLocation.latitude,
               longitude: place.geometry?.location?.lng() || userLocation.longitude,
               photoUrl,
+              openNow,
+              openingHours,
             };
           }).sort((a, b) => a.distance - b.distance);
 

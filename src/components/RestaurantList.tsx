@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, Star, Phone, Globe, Navigation, Image as ImageIcon } from 'lucide-react';
+import { MapPin, Star, Phone, Globe, Navigation, Image as ImageIcon, Clock } from 'lucide-react';
 
 interface Restaurant {
   id: string;
@@ -16,6 +16,8 @@ interface Restaurant {
   latitude: number;
   longitude: number;
   photoUrl?: string;
+  openNow?: boolean;
+  openingHours?: string[];
 }
 
 interface RestaurantListProps {
@@ -111,6 +113,16 @@ const RestaurantList: React.FC<RestaurantListProps> = ({ restaurants }) => {
                           {restaurant.cuisine && (
                             <Badge variant="outline" className="text-xs">
                               {restaurant.cuisine}
+                            </Badge>
+                          )}
+
+                          {restaurant.openNow !== undefined && (
+                            <Badge 
+                              variant={restaurant.openNow ? "default" : "secondary"}
+                              className={restaurant.openNow ? "bg-green-500 hover:bg-green-600 text-xs" : "text-xs"}
+                            >
+                              <Clock className="w-3 h-3 mr-1" />
+                              {restaurant.openNow ? "Open" : "Closed"}
                             </Badge>
                           )}
                         </div>

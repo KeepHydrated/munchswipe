@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MapPin, Star, Navigation, Shuffle, ArrowLeft, Image as ImageIcon } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { MapPin, Star, Navigation, Shuffle, ArrowLeft, Image as ImageIcon, Clock } from 'lucide-react';
 import { useRestaurants } from '@/contexts/RestaurantContext';
 import { Link } from 'react-router-dom';
 
@@ -130,6 +131,32 @@ const RandomPick = () => {
                           <span className="text-primary font-medium capitalize">
                             {selectedRestaurant.cuisine}
                           </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedRestaurant.openNow !== undefined && (
+                      <div className="flex items-center space-x-3 mt-4">
+                        <Clock className="w-5 h-5 text-primary flex-shrink-0" />
+                        <Badge 
+                          variant={selectedRestaurant.openNow ? "default" : "secondary"}
+                          className={selectedRestaurant.openNow ? "bg-green-500 hover:bg-green-600" : ""}
+                        >
+                          {selectedRestaurant.openNow ? "Open Now" : "Closed"}
+                        </Badge>
+                      </div>
+                    )}
+
+                    {selectedRestaurant.openingHours && selectedRestaurant.openingHours.length > 0 && (
+                      <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                        <h4 className="font-semibold mb-2 flex items-center">
+                          <Clock className="w-4 h-4 mr-2" />
+                          Opening Hours
+                        </h4>
+                        <div className="space-y-1 text-sm text-muted-foreground">
+                          {selectedRestaurant.openingHours.map((hours, index) => (
+                            <p key={index}>{hours}</p>
+                          ))}
                         </div>
                       </div>
                     )}
