@@ -9,11 +9,33 @@ import { Link } from 'react-router-dom';
 const RandomPick = () => {
   const { restaurants } = useRestaurants();
   const [selectedRestaurant, setSelectedRestaurant] = useState<typeof restaurants[0] | null>(null);
+  const [recentlyShown, setRecentlyShown] = useState<string[]>([]);
 
   const getRandomRestaurant = () => {
     if (restaurants.length === 0) return;
-    const randomIndex = Math.floor(Math.random() * restaurants.length);
-    setSelectedRestaurant(restaurants[randomIndex]);
+    
+    // Get restaurants that haven't been shown recently
+    const availableRestaurants = restaurants.filter(
+      r => !recentlyShown.includes(r.id)
+    );
+    
+    // If all restaurants have been shown, reset the history but keep current one
+    const poolToChooseFrom = availableRestaurants.length > 0 
+      ? availableRestaurants 
+      : restaurants.filter(r => r.id !== selectedRestaurant?.id);
+    
+    // Pick a random restaurant from the available pool
+    const randomIndex = Math.floor(Math.random() * poolToChooseFrom.length);
+    const newRestaurant = poolToChooseFrom[randomIndex];
+    
+    setSelectedRestaurant(newRestaurant);
+    
+    // Update recently shown list (keep last 5 or half of total restaurants, whichever is smaller)
+    const maxHistory = Math.min(5, Math.floor(restaurants.length / 2));
+    setRecentlyShown(prev => {
+      const updated = [...prev, newRestaurant.id];
+      return updated.slice(-maxHistory);
+    });
   };
 
   return (
