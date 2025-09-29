@@ -81,13 +81,6 @@ const RandomPick = () => {
           </Card>
         ) : (
           <div className="space-y-8">
-            <div className="text-center">
-              <h2 className="text-3xl font-bold mb-2">Can't decide where to eat?</h2>
-              <p className="text-muted-foreground text-lg">
-                Let us pick a random restaurant for you from {restaurants.length} nearby options!
-              </p>
-            </div>
-
             <div className="flex justify-center">
               <Button 
                 onClick={getRandomRestaurant}
