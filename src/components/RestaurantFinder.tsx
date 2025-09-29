@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Navigation, Clock, Star, Phone, Globe } from 'lucide-react';
+import { MapPin, Navigation } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import GoogleMap from '@/components/GoogleMap';
 import RestaurantList from '@/components/RestaurantList';
+import { Loader } from '@googlemaps/js-api-loader';
 
 interface Restaurant {
   id: string;
@@ -30,12 +30,23 @@ const RestaurantFinder = () => {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(false);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
-  const [apiEndpoint, setApiEndpoint] = useState('');
-  const [googleMapsApiKey, setGoogleMapsApiKey] = useState('AIzaSyASk-OpxAIgawBXmdyFi-C7QMMPFDq7jlU');
-  const [showApiInputs, setShowApiInputs] = useState(true);
+  const [googleMapsApiKey] = useState('AIzaSyASk-OpxAIgawBXmdyFi-C7QMMPFDq7jlU');
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  const [googleMapsLoaded, setGoogleMapsLoaded] = useState(false);
   
   const { toast } = useToast();
+
+  useEffect(() => {
+    const loader = new Loader({
+      apiKey: googleMapsApiKey,
+      version: 'weekly',
+      libraries: ['places', 'geometry']
+    });
+
+    loader.load().then(() => {
+      setGoogleMapsLoaded(true);
+    });
+  }, [googleMapsApiKey]);
 
   const getCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -74,152 +85,75 @@ const RestaurantFinder = () => {
   }, [toast]);
 
   const fetchRestaurants = useCallback(async () => {
-    if (!userLocation || !apiEndpoint) return;
+    if (!userLocation || !googleMapsLoaded) return;
 
     setLoading(true);
     try {
-      // This would be replaced with the user's actual API call
-      const response = await fetch(apiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          latitude: userLocation.latitude,
-          longitude: userLocation.longitude,
-          radius: 10, // miles
-        }),
-      });
+      const location = new google.maps.LatLng(userLocation.latitude, userLocation.longitude);
+      const map = new google.maps.Map(document.createElement('div'));
+      
+      const service = new google.maps.places.PlacesService(map);
+      const request = {
+        location: location,
+        radius: 16093, // 10 miles in meters
+        type: 'restaurant'
+      };
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch restaurants');
-      }
+      service.nearbySearch(request, (results, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+          const restaurantData: Restaurant[] = results.map((place) => {
+            const distance = place.geometry?.location 
+              ? google.maps.geometry.spherical.computeDistanceBetween(
+                  location,
+                  place.geometry.location
+                ) * 0.000621371 // Convert meters to miles
+              : 0;
 
-      const data = await response.json();
-      setRestaurants(data.restaurants || []);
-      toast({
-        title: "Success",
-        description: `Found ${data.restaurants?.length || 0} restaurants nearby!`,
+            return {
+              id: place.place_id || '',
+              name: place.name || 'Unknown Restaurant',
+              address: place.vicinity || '',
+              distance: parseFloat(distance.toFixed(1)),
+              rating: place.rating,
+              cuisine: place.types?.[0]?.replace(/_/g, ' ') || undefined,
+              phone: undefined,
+              website: undefined,
+              latitude: place.geometry?.location?.lat() || userLocation.latitude,
+              longitude: place.geometry?.location?.lng() || userLocation.longitude,
+            };
+          }).sort((a, b) => a.distance - b.distance);
+
+          setRestaurants(restaurantData);
+          toast({
+            title: "Success",
+            description: `Found ${restaurantData.length} restaurants nearby!`,
+          });
+        } else {
+          throw new Error('Failed to fetch restaurants from Google Places');
+        }
+        setLoading(false);
       });
     } catch (error) {
-      toast({
-        title: "API Error",
-        description: "Failed to fetch restaurants from your API. Using demo data instead.",
-        variant: "destructive",
-      });
-      
-      // Demo data for showcase
-      const demoRestaurants: Restaurant[] = [
-        {
-          id: '1',
-          name: 'Bella Vista Italian',
-          address: '123 Main St, Downtown',
-          distance: 0.8,
-          rating: 4.5,
-          cuisine: 'Italian',
-          phone: '(555) 123-4567',
-          latitude: userLocation.latitude + 0.01,
-          longitude: userLocation.longitude + 0.01,
-        },
-        {
-          id: '2',
-          name: 'Sakura Sushi Bar',
-          address: '456 Oak Avenue',
-          distance: 1.2,
-          rating: 4.8,
-          cuisine: 'Japanese',
-          phone: '(555) 987-6543',
-          latitude: userLocation.latitude - 0.008,
-          longitude: userLocation.longitude + 0.012,
-        },
-        {
-          id: '3',
-          name: 'The Garden Bistro',
-          address: '789 Pine Street',
-          distance: 2.1,
-          rating: 4.3,
-          cuisine: 'American',
-          website: 'gardenbistro.com',
-          latitude: userLocation.latitude + 0.015,
-          longitude: userLocation.longitude - 0.01,
-        }
-      ];
-      setRestaurants(demoRestaurants);
-    } finally {
       setLoading(false);
-    }
-  }, [userLocation, apiEndpoint, toast]);
-
-  const handleSetupComplete = () => {
-    if (!apiEndpoint || !googleMapsApiKey) {
       toast({
-        title: "Missing Information",
-        description: "Please provide both API endpoint and Google Maps API key",
+        title: "Error",
+        description: "Failed to fetch restaurants. Please try again.",
         variant: "destructive",
       });
-      return;
     }
-    setShowApiInputs(false);
-    getCurrentLocation();
-  };
+  }, [userLocation, googleMapsLoaded, toast]);
 
   useEffect(() => {
-    if (userLocation && !showApiInputs) {
+    if (googleMapsLoaded) {
+      getCurrentLocation();
+    }
+  }, [googleMapsLoaded, getCurrentLocation]);
+
+  useEffect(() => {
+    if (userLocation && googleMapsLoaded) {
       fetchRestaurants();
     }
-  }, [userLocation, fetchRestaurants, showApiInputs]);
-
-  if (showApiInputs) {
-    return (
-      <div className="min-h-screen bg-gradient-subtle p-4 flex items-center justify-center">
-        <Card className="w-full max-w-md shadow-warm">
-          <CardHeader className="text-center">
-            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-primary rounded-full flex items-center justify-center">
-              <MapPin className="w-8 h-8 text-primary-foreground" />
-            </div>
-            <CardTitle className="text-2xl bg-gradient-primary bg-clip-text text-transparent">
-              Restaurant Finder Setup
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                Your API Endpoint
-              </label>
-              <Input
-                placeholder="https://your-api.com/restaurants"
-                value={apiEndpoint}
-                onChange={(e) => setApiEndpoint(e.target.value)}
-                className="transition-smooth focus:shadow-glow"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                Google Maps API Key
-              </label>
-              <Input
-                type="password"
-                placeholder="Your Google Maps API Key"
-                value={googleMapsApiKey}
-                onChange={(e) => setGoogleMapsApiKey(e.target.value)}
-                className="transition-smooth focus:shadow-glow"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Get your key at <a href="https://console.cloud.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google Cloud Console</a>
-              </p>
-            </div>
-            <Button 
-              onClick={handleSetupComplete}
-              className="w-full bg-gradient-primary hover:shadow-warm transition-bounce"
-            >
-              <Navigation className="w-4 h-4 mr-2" />
-              Find Restaurants Near Me
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  }, [userLocation, fetchRestaurants, googleMapsLoaded]);
 
   return (
     <div className="min-h-screen bg-background">
