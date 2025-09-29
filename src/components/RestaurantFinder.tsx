@@ -6,7 +6,6 @@ import { MapPin, Navigation } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import GoogleMap from '@/components/GoogleMap';
 import RestaurantList from '@/components/RestaurantList';
-import { Loader } from '@googlemaps/js-api-loader';
 
 interface Restaurant {
   id: string;
@@ -32,21 +31,8 @@ const RestaurantFinder = () => {
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [googleMapsApiKey] = useState('AIzaSyASk-OpxAIgawBXmdyFi-C7QMMPFDq7jlU');
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
-  const [googleMapsLoaded, setGoogleMapsLoaded] = useState(false);
   
   const { toast } = useToast();
-
-  useEffect(() => {
-    const loader = new Loader({
-      apiKey: googleMapsApiKey,
-      version: 'weekly',
-      libraries: ['places', 'geometry']
-    });
-
-    loader.load().then(() => {
-      setGoogleMapsLoaded(true);
-    });
-  }, [googleMapsApiKey]);
 
   const getCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -85,7 +71,7 @@ const RestaurantFinder = () => {
   }, [toast]);
 
   const fetchRestaurants = useCallback(async () => {
-    if (!userLocation || !googleMapsLoaded) return;
+    if (!userLocation || typeof google === 'undefined' || !google.maps) return;
 
     setLoading(true);
     try {
@@ -141,19 +127,17 @@ const RestaurantFinder = () => {
         variant: "destructive",
       });
     }
-  }, [userLocation, googleMapsLoaded, toast]);
+  }, [userLocation, toast]);
 
   useEffect(() => {
-    if (googleMapsLoaded) {
-      getCurrentLocation();
-    }
-  }, [googleMapsLoaded, getCurrentLocation]);
+    getCurrentLocation();
+  }, [getCurrentLocation]);
 
   useEffect(() => {
-    if (userLocation && googleMapsLoaded) {
+    if (userLocation && typeof google !== 'undefined' && google.maps) {
       fetchRestaurants();
     }
-  }, [userLocation, fetchRestaurants, googleMapsLoaded]);
+  }, [userLocation, fetchRestaurants]);
 
   return (
     <div className="min-h-screen bg-background">
