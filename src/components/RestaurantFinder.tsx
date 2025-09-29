@@ -199,11 +199,16 @@ const RestaurantFinder = () => {
             // Find cuisine type from the place types
             let cuisine: string | undefined;
             if (place.types) {
+              console.log(`Restaurant: ${place.name}, Types:`, place.types);
               for (const type of place.types) {
                 if (cuisineMap[type]) {
                   cuisine = cuisineMap[type];
+                  console.log(`Found cuisine for ${place.name}: ${cuisine} (from type: ${type})`);
                   break;
                 }
+              }
+              if (!cuisine) {
+                console.log(`No cuisine found for ${place.name} from types:`, place.types);
               }
             }
 
