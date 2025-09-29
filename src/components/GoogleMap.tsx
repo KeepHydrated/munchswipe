@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Loader } from '@googlemaps/js-api-loader';
+import { loadGoogleMaps } from '@/lib/googleMapsLoader';
 
 interface Restaurant {
   id: string;
@@ -42,14 +42,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       return;
     }
 
-    const loader = new Loader({
-      apiKey,
-      version: 'weekly',
-      libraries: ['places', 'geometry'],
-    });
-
-    loader
-      .load()
+    loadGoogleMaps(apiKey)
       .then(() => {
         setIsLoaded(true);
         setError(null);

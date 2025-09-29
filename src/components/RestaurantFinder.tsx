@@ -6,6 +6,7 @@ import { MapPin, Navigation } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import GoogleMap from '@/components/GoogleMap';
 import RestaurantList from '@/components/RestaurantList';
+import { loadGoogleMaps } from '@/lib/googleMapsLoader';
 
 interface Restaurant {
   id: string;
@@ -130,11 +131,13 @@ const RestaurantFinder = () => {
   }, [userLocation, toast]);
 
   useEffect(() => {
-    getCurrentLocation();
-  }, [getCurrentLocation]);
+    loadGoogleMaps(googleMapsApiKey).then(() => {
+      getCurrentLocation();
+    });
+  }, [googleMapsApiKey, getCurrentLocation]);
 
   useEffect(() => {
-    if (userLocation && typeof google !== 'undefined' && google.maps) {
+    if (userLocation) {
       fetchRestaurants();
     }
   }, [userLocation, fetchRestaurants]);
