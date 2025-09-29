@@ -125,7 +125,14 @@ const RestaurantFinder = () => {
             // Get photo URL if available
             let photoUrl: string | undefined;
             if (place.photos && place.photos.length > 0) {
-              photoUrl = place.photos[0].getUrl({ maxWidth: 800, maxHeight: 600 });
+              try {
+                photoUrl = place.photos[0].getUrl({ maxWidth: 800, maxHeight: 600 });
+                console.log(`Photo URL for ${place.name}:`, photoUrl);
+              } catch (error) {
+                console.error(`Error getting photo for ${place.name}:`, error);
+              }
+            } else {
+              console.log(`No photos available for ${place.name}`);
             }
 
             return {
@@ -143,7 +150,7 @@ const RestaurantFinder = () => {
             };
           }).sort((a, b) => a.distance - b.distance);
 
-          console.log('Processed restaurants:', restaurantData.length);
+          console.log('Processed restaurants with photos:', restaurantData.map(r => ({ name: r.name, hasPhoto: !!r.photoUrl })));
           setRestaurants(restaurantData);
           setLoading(false);
           toast({
