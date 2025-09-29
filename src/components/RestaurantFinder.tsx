@@ -150,17 +150,22 @@ const RestaurantFinder = () => {
                 console.log(`No photos available for ${place.name}`);
               }
 
-              // Get opening hours if available
-              const openNow = place.opening_hours?.open_now;
-              const openingHours = place.opening_hours?.weekday_text;
+            // Get opening hours if available
+            const openNow = place.opening_hours?.open_now;
+            const openingHours = place.opening_hours?.weekday_text;
 
-              return {
-                id: place.place_id || '',
-                name: place.name || 'Unknown Restaurant',
-                address: place.vicinity || '',
-                distance: parseFloat(distance.toFixed(1)),
-                rating: place.rating,
-                cuisine: place.types?.[0]?.replace(/_/g, ' ') || undefined,
+            // Extract cuisine type - skip generic types and find specific cuisine
+            const genericTypes = ['restaurant', 'food', 'point_of_interest', 'establishment', 'store'];
+            const cuisineType = place.types?.find(type => !genericTypes.includes(type));
+            const cuisine = cuisineType?.replace(/_/g, ' ');
+
+            return {
+              id: place.place_id || '',
+              name: place.name || 'Unknown Restaurant',
+              address: place.vicinity || '',
+              distance: parseFloat(distance.toFixed(1)),
+              rating: place.rating,
+              cuisine: cuisine,
                 phone: undefined,
                 website: undefined,
                 latitude: place.geometry?.location?.lat() || userLocation.latitude,
