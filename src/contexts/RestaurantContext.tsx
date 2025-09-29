@@ -11,6 +11,7 @@ interface Restaurant {
   website?: string;
   latitude: number;
   longitude: number;
+  photoUrl?: string;
 }
 
 interface UserLocation {

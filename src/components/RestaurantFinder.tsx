@@ -21,6 +21,7 @@ interface Restaurant {
   website?: string;
   latitude: number;
   longitude: number;
+  photoUrl?: string;
 }
 
 const RestaurantFinder = () => {
@@ -121,6 +122,12 @@ const RestaurantFinder = () => {
                 ) * 0.000621371 // Convert meters to miles
               : 0;
 
+            // Get photo URL if available
+            let photoUrl: string | undefined;
+            if (place.photos && place.photos.length > 0) {
+              photoUrl = place.photos[0].getUrl({ maxWidth: 800, maxHeight: 600 });
+            }
+
             return {
               id: place.place_id || '',
               name: place.name || 'Unknown Restaurant',
@@ -132,6 +139,7 @@ const RestaurantFinder = () => {
               website: undefined,
               latitude: place.geometry?.location?.lat() || userLocation.latitude,
               longitude: place.geometry?.location?.lng() || userLocation.longitude,
+              photoUrl,
             };
           }).sort((a, b) => a.distance - b.distance);
 

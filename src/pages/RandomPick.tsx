@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MapPin, Star, Navigation, Shuffle, ArrowLeft } from 'lucide-react';
+import { MapPin, Star, Navigation, Shuffle, ArrowLeft, Image as ImageIcon } from 'lucide-react';
 import { useRestaurants } from '@/contexts/RestaurantContext';
 import { Link } from 'react-router-dom';
 
@@ -78,6 +78,23 @@ const RandomPick = () => {
 
             {selectedRestaurant && (
               <Card className="shadow-warm animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {selectedRestaurant.photoUrl && (
+                  <div className="relative w-full h-64 overflow-hidden rounded-t-lg">
+                    <img 
+                      src={selectedRestaurant.photoUrl} 
+                      alt={selectedRestaurant.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
+                {!selectedRestaurant.photoUrl && (
+                  <div className="relative w-full h-64 bg-gradient-subtle flex items-center justify-center rounded-t-lg">
+                    <ImageIcon className="w-16 h-16 text-muted-foreground" />
+                  </div>
+                )}
                 <CardHeader className="text-center pb-4">
                   <CardTitle className="text-3xl">{selectedRestaurant.name}</CardTitle>
                 </CardHeader>

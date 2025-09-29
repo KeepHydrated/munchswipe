@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, Star, Phone, Globe, Navigation } from 'lucide-react';
+import { MapPin, Star, Phone, Globe, Navigation, Image as ImageIcon } from 'lucide-react';
 
 interface Restaurant {
   id: string;
@@ -15,6 +15,7 @@ interface Restaurant {
   website?: string;
   latitude: number;
   longitude: number;
+  photoUrl?: string;
 }
 
 interface RestaurantListProps {
@@ -56,13 +57,36 @@ const RestaurantList: React.FC<RestaurantListProps> = ({ restaurants }) => {
         {restaurants
           .sort((a, b) => a.distance - b.distance)
           .map((restaurant) => (
-            <Card key={restaurant.id} className="shadow-card hover:shadow-warm transition-smooth">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
+            <Card key={restaurant.id} className="shadow-card hover:shadow-warm transition-smooth overflow-hidden">
+              <CardContent className="p-0">
+                <div className="flex flex-col sm:flex-row">
+                  {/* Restaurant Photo */}
+                  <div className="w-full sm:w-48 h-48 flex-shrink-0">
+                    {restaurant.photoUrl ? (
+                      <img 
+                        src={restaurant.photoUrl} 
+                        alt={restaurant.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const parent = e.currentTarget.parentElement;
+                          if (parent) {
+                            parent.innerHTML = '<div class="w-full h-full bg-gradient-subtle flex items-center justify-center"><svg class="w-12 h-12 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>';
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-subtle flex items-center justify-center">
+                        <ImageIcon className="w-12 h-12 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Restaurant Info */}
+                  <div className="flex-1 p-6">
                     <div className="flex items-start gap-3 mb-3">
-                      <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center flex-shrink-0">
-                        <MapPin className="w-6 h-6 text-primary-foreground" />
+                      <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center flex-shrink-0">
+                        <MapPin className="w-5 h-5 text-primary-foreground" />
                       </div>
                       
                       <div className="flex-1">
@@ -93,7 +117,7 @@ const RestaurantList: React.FC<RestaurantListProps> = ({ restaurants }) => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 mt-4">
+                    <div className="flex items-center gap-3 mt-4 flex-wrap">
                       <Button
                         size="sm"
                         onClick={() => handleGetDirections(restaurant)}
