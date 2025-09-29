@@ -112,59 +112,73 @@ const RestaurantFinder = () => {
 
       console.log('Making Places API request:', request);
 
-      service.nearbySearch(request, (results, status) => {
-        console.log('Places API response:', { status, resultsCount: results?.length });
+      let allResults: google.maps.places.PlaceResult[] = [];
+      
+      const processResults = (results: google.maps.places.PlaceResult[] | null, status: google.maps.places.PlacesServiceStatus, pagination: google.maps.places.PlaceSearchPagination | null) => {
+        console.log('Places API response:', { status, resultsCount: results?.length, hasMore: pagination?.hasNextPage });
         
         if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-          const restaurantData: Restaurant[] = results.map((place) => {
-            const distance = place.geometry?.location 
-              ? google.maps.geometry.spherical.computeDistanceBetween(
-                  location,
-                  place.geometry.location
-                ) * 0.000621371 // Convert meters to miles
-              : 0;
+          allResults = [...allResults, ...results];
+          
+          // Try to get more results if available (up to 60 total - 3 pages)
+          if (pagination?.hasNextPage && allResults.length < 60) {
+            console.log('Fetching next page of results...');
+            // Need to wait a bit before requesting next page
+            setTimeout(() => {
+              pagination.nextPage();
+            }, 2000);
+          } else {
+            // Process all collected results
+            const restaurantData: Restaurant[] = allResults.map((place) => {
+              const distance = place.geometry?.location 
+                ? google.maps.geometry.spherical.computeDistanceBetween(
+                    location,
+                    place.geometry.location
+                  ) * 0.000621371 // Convert meters to miles
+                : 0;
 
-            // Get photo URL if available
-            let photoUrl: string | undefined;
-            if (place.photos && place.photos.length > 0) {
-              try {
-                photoUrl = place.photos[0].getUrl({ maxWidth: 800, maxHeight: 600 });
-                console.log(`Photo URL for ${place.name}:`, photoUrl);
-              } catch (error) {
-                console.error(`Error getting photo for ${place.name}:`, error);
+              // Get photo URL if available
+              let photoUrl: string | undefined;
+              if (place.photos && place.photos.length > 0) {
+                try {
+                  photoUrl = place.photos[0].getUrl({ maxWidth: 800, maxHeight: 600 });
+                  console.log(`Photo URL for ${place.name}:`, photoUrl);
+                } catch (error) {
+                  console.error(`Error getting photo for ${place.name}:`, error);
+                }
+              } else {
+                console.log(`No photos available for ${place.name}`);
               }
-            } else {
-              console.log(`No photos available for ${place.name}`);
-            }
 
-            // Get opening hours if available
-            const openNow = place.opening_hours?.open_now;
-            const openingHours = place.opening_hours?.weekday_text;
+              // Get opening hours if available
+              const openNow = place.opening_hours?.open_now;
+              const openingHours = place.opening_hours?.weekday_text;
 
-            return {
-              id: place.place_id || '',
-              name: place.name || 'Unknown Restaurant',
-              address: place.vicinity || '',
-              distance: parseFloat(distance.toFixed(1)),
-              rating: place.rating,
-              cuisine: place.types?.[0]?.replace(/_/g, ' ') || undefined,
-              phone: undefined,
-              website: undefined,
-              latitude: place.geometry?.location?.lat() || userLocation.latitude,
-              longitude: place.geometry?.location?.lng() || userLocation.longitude,
-              photoUrl,
-              openNow,
-              openingHours,
-            };
-          }).sort((a, b) => a.distance - b.distance);
+              return {
+                id: place.place_id || '',
+                name: place.name || 'Unknown Restaurant',
+                address: place.vicinity || '',
+                distance: parseFloat(distance.toFixed(1)),
+                rating: place.rating,
+                cuisine: place.types?.[0]?.replace(/_/g, ' ') || undefined,
+                phone: undefined,
+                website: undefined,
+                latitude: place.geometry?.location?.lat() || userLocation.latitude,
+                longitude: place.geometry?.location?.lng() || userLocation.longitude,
+                photoUrl,
+                openNow,
+                openingHours,
+              };
+            }).sort((a, b) => a.distance - b.distance);
 
-          console.log('Processed restaurants with photos:', restaurantData.map(r => ({ name: r.name, hasPhoto: !!r.photoUrl })));
-          setRestaurants(restaurantData);
-          setLoading(false);
-          toast({
-            title: "Success",
-            description: `Found ${restaurantData.length} restaurants nearby!`,
-          });
+            console.log('Processed restaurants with photos:', restaurantData.map(r => ({ name: r.name, hasPhoto: !!r.photoUrl })));
+            setRestaurants(restaurantData);
+            setLoading(false);
+            toast({
+              title: "Success",
+              description: `Found ${restaurantData.length} restaurants nearby!`,
+            });
+          }
         } else {
           console.error('Places API error status:', status);
           setLoading(false);
@@ -174,7 +188,9 @@ const RestaurantFinder = () => {
             variant: "destructive",
           });
         }
-      });
+      };
+
+      service.nearbySearch(request, processResults);
     } catch (error) {
       console.error('Error in fetchRestaurants:', error);
       setLoading(false);
