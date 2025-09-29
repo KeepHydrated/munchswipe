@@ -72,9 +72,34 @@ const RestaurantFinder = () => {
   }, [toast]);
 
   const fetchRestaurants = useCallback(async () => {
-    if (!userLocation || typeof google === 'undefined' || !google.maps) return;
+    if (!userLocation) {
+      console.log('No user location available');
+      return;
+    }
 
+    if (typeof google === 'undefined' || !google.maps) {
+      console.log('Google Maps not loaded yet');
+      toast({
+        title: "Loading Error",
+        description: "Google Maps is still loading. Please wait...",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!google.maps.geometry) {
+      console.log('Geometry library not loaded');
+      toast({
+        title: "Loading Error",
+        description: "Required Google Maps libraries are still loading...",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('Starting restaurant search at:', userLocation);
     setLoading(true);
+    
     try {
       const location = new google.maps.LatLng(userLocation.latitude, userLocation.longitude);
       const map = new google.maps.Map(document.createElement('div'));
@@ -86,7 +111,11 @@ const RestaurantFinder = () => {
         type: 'restaurant'
       };
 
+      console.log('Making Places API request:', request);
+
       service.nearbySearch(request, (results, status) => {
+        console.log('Places API response:', { status, resultsCount: results?.length });
+        
         if (status === google.maps.places.PlacesServiceStatus.OK && results) {
           const restaurantData: Restaurant[] = results.map((place) => {
             const distance = place.geometry?.location 
@@ -110,17 +139,25 @@ const RestaurantFinder = () => {
             };
           }).sort((a, b) => a.distance - b.distance);
 
+          console.log('Processed restaurants:', restaurantData.length);
           setRestaurants(restaurantData);
+          setLoading(false);
           toast({
             title: "Success",
             description: `Found ${restaurantData.length} restaurants nearby!`,
           });
         } else {
-          throw new Error('Failed to fetch restaurants from Google Places');
+          console.error('Places API error status:', status);
+          setLoading(false);
+          toast({
+            title: "Search Error",
+            description: `Could not find restaurants: ${status}. Please try again.`,
+            variant: "destructive",
+          });
         }
-        setLoading(false);
       });
     } catch (error) {
+      console.error('Error in fetchRestaurants:', error);
       setLoading(false);
       toast({
         title: "Error",
