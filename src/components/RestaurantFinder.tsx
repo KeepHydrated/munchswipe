@@ -107,7 +107,8 @@ const RestaurantFinder = () => {
       const request = {
         location: location,
         radius: 8047, // 5 miles in meters (reduced from 10 miles for closer results)
-        type: 'restaurant'
+        type: 'restaurant',
+        openNow: true // Only show restaurants that are currently open
       };
 
       console.log('Making Places API request:', request);
