@@ -141,18 +141,6 @@ const RandomPick = () => {
                       </div>
                     )}
 
-                    {selectedRestaurant.openNow !== undefined && (
-                      <div className="flex items-center space-x-3 mt-4">
-                        <Clock className="w-5 h-5 text-primary flex-shrink-0" />
-                        <Badge 
-                          variant={selectedRestaurant.openNow ? "default" : "secondary"}
-                          className={selectedRestaurant.openNow ? "bg-green-500 hover:bg-green-600" : ""}
-                        >
-                          {selectedRestaurant.openNow ? "Open Now" : "Closed"}
-                        </Badge>
-                      </div>
-                    )}
-
                     {selectedRestaurant.openingHours && selectedRestaurant.openingHours.length > 0 && (() => {
                       const today = new Date().getDay();
                       const todayHours = selectedRestaurant.openingHours[today];
