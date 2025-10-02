@@ -144,13 +144,11 @@ const RandomPick = () => {
                     {selectedRestaurant.openingHours && selectedRestaurant.openingHours.length > 0 && (() => {
                       const today = new Date().getDay();
                       const todayHours = selectedRestaurant.openingHours[today];
-                      // Try both en dash (–) and hyphen (-)
-                      const closingTime = todayHours?.split(/[–-]/)[1]?.trim();
                       
-                      return closingTime ? (
+                      return todayHours ? (
                         <div className="flex items-center space-x-3">
                           <Clock className="w-5 h-5 text-primary flex-shrink-0" />
-                          <span className="text-muted-foreground">Closes at {closingTime}</span>
+                          <span className="text-muted-foreground">{todayHours}</span>
                         </div>
                       ) : null;
                     })()}
