@@ -141,17 +141,21 @@ const RandomPick = () => {
                       </div>
                     )}
 
-                    {selectedRestaurant.openingHours && selectedRestaurant.openingHours.length > 0 && (() => {
-                      const today = new Date().getDay();
-                      const todayHours = selectedRestaurant.openingHours[today];
-                      
-                      return todayHours ? (
-                        <div className="flex items-center space-x-3">
-                          <Clock className="w-5 h-5 text-primary flex-shrink-0" />
-                          <span className="text-muted-foreground">{todayHours}</span>
+                    {selectedRestaurant.openingHours && selectedRestaurant.openingHours.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2 mb-3">
+                          <Clock className="w-5 h-5 text-primary" />
+                          <h3 className="font-semibold">Opening Hours</h3>
                         </div>
-                      ) : null;
-                    })()}
+                        <div className="space-y-1 text-sm">
+                          {selectedRestaurant.openingHours.map((hours, index) => (
+                            <p key={index} className="text-muted-foreground">
+                              {hours}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="pt-4 flex gap-3">
