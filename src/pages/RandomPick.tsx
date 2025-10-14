@@ -228,21 +228,27 @@ const RandomPick = () => {
     }
   };
 
-  // Initialize Google Maps and get location on mount
+  // Initialize Google Maps, get location, and fetch restaurants on mount
   useEffect(() => {
-    if (!userLocation) {
-      loadGoogleMaps(googleMapsApiKey).then(() => {
-        getCurrentLocation();
-      });
-    }
+    const initializeRestaurants = async () => {
+      // Load Google Maps API first
+      await loadGoogleMaps(googleMapsApiKey);
+      
+      // Get location if we don't have it
+      if (!userLocation) {
+        await getCurrentLocation();
+      }
+    };
+    
+    initializeRestaurants();
   }, []);
 
-  // Fetch restaurants when location is available
+  // Fetch restaurants when location is available and we don't have restaurants
   useEffect(() => {
-    if (userLocation && restaurants.length === 0) {
+    if (userLocation && restaurants.length === 0 && typeof google !== 'undefined') {
       fetchRestaurants();
     }
-  }, [userLocation]);
+  }, [userLocation, restaurants.length]);
 
   // Helper function to check if restaurant is open now or will be open in next hour
   const isOpenOrOpeningSoon = (restaurant: typeof restaurants[0]) => {
