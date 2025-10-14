@@ -62,10 +62,12 @@ const RestaurantFinder = () => {
       (error) => {
         setLoading(false);
         let errorMessage = "Unable to get your location";
+        let instructions = "";
         
         switch(error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage = "Please enable location permissions in your browser settings";
+            errorMessage = "Location access blocked";
+            instructions = "Tap the 🔒 or ⓘ icon in your browser's address bar, then enable Location permissions. Refresh the page after enabling.";
             break;
           case error.POSITION_UNAVAILABLE:
             errorMessage = "Location information unavailable. Try again in a moment";
@@ -76,9 +78,10 @@ const RestaurantFinder = () => {
         }
         
         toast({
-          title: "Location Error",
-          description: errorMessage,
+          title: errorMessage,
+          description: instructions || errorMessage,
           variant: "destructive",
+          duration: 10000,
         });
       },
       { 
