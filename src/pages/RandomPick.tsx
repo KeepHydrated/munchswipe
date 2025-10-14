@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Star, Navigation, Shuffle, ArrowLeft, Image as ImageIcon, Clock, ChevronDown } from 'lucide-react';
+import { MapPin, Star, Navigation, Shuffle, ArrowLeft, Image as ImageIcon, Clock, ChevronDown, Heart, X } from 'lucide-react';
 import { useRestaurants } from '@/contexts/RestaurantContext';
 import { Link } from 'react-router-dom';
 
@@ -11,6 +11,11 @@ const RandomPick = () => {
   const [selectedRestaurant, setSelectedRestaurant] = useState<typeof restaurants[0] | null>(null);
   const [recentlyShown, setRecentlyShown] = useState<string[]>([]);
   const [showHours, setShowHours] = useState(false);
+  
+  // Swipe state
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+  const [touchCurrent, setTouchCurrent] = useState<{ x: number; y: number } | null>(null);
+  const [isSwiping, setIsSwiping] = useState(false);
 
   // Helper function to check if restaurant is open now or will be open in next hour
   const isOpenOrOpeningSoon = (restaurant: typeof restaurants[0]) => {
@@ -84,6 +89,72 @@ const RandomPick = () => {
     });
   };
 
+  // Touch handlers for swipe
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    setTouchStart({ x: touch.clientX, y: touch.clientY });
+    setTouchCurrent({ x: touch.clientX, y: touch.clientY });
+    setIsSwiping(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStart) return;
+    const touch = e.touches[0];
+    setTouchCurrent({ x: touch.clientX, y: touch.clientY });
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchCurrent) {
+      setIsSwiping(false);
+      setTouchStart(null);
+      setTouchCurrent(null);
+      return;
+    }
+
+    const deltaX = touchCurrent.x - touchStart.x;
+    const deltaY = Math.abs(touchCurrent.y - touchStart.y);
+    
+    // Only trigger if horizontal swipe is more significant than vertical
+    if (Math.abs(deltaX) > 100 && Math.abs(deltaX) > deltaY) {
+      if (deltaX < 0) {
+        // Swipe left - pick another
+        getRandomRestaurant();
+      }
+      // Swipe right - accept (do nothing, just reset)
+    }
+
+    // Reset swipe state
+    setIsSwiping(false);
+    setTouchStart(null);
+    setTouchCurrent(null);
+  };
+
+  // Calculate swipe transform
+  const getSwipeTransform = () => {
+    if (!touchStart || !touchCurrent || !isSwiping) {
+      return {
+        transform: 'translate(0px, 0px) rotate(0deg)',
+        transition: 'transform 0.3s ease-out',
+      };
+    }
+    
+    const deltaX = touchCurrent.x - touchStart.x;
+    const deltaY = touchCurrent.y - touchStart.y;
+    const rotation = deltaX / 20; // Subtle rotation based on swipe
+
+    return {
+      transform: `translate(${deltaX}px, ${deltaY}px) rotate(${rotation}deg)`,
+      transition: 'none',
+    };
+  };
+
+  // Calculate overlay opacity
+  const getOverlayOpacity = () => {
+    if (!touchStart || !touchCurrent || !isSwiping) return 0;
+    const deltaX = touchCurrent.x - touchStart.x;
+    return Math.min(Math.abs(deltaX) / 150, 1);
+  };
+
   // Automatically pick a random restaurant when restaurants are available
   useEffect(() => {
     if (restaurants.length > 0 && !selectedRestaurant) {
@@ -151,7 +222,38 @@ const RandomPick = () => {
         ) : (
           <div className="space-y-8">
             {selectedRestaurant && (
-              <Card className="shadow-warm animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div 
+                className="relative touch-none"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                style={getSwipeTransform()}
+              >
+                {/* Swipe overlays */}
+                <div 
+                  className="absolute inset-0 z-10 pointer-events-none rounded-lg flex items-center justify-center"
+                  style={{ 
+                    opacity: touchStart && touchCurrent && (touchCurrent.x - touchStart.x) > 0 ? getOverlayOpacity() : 0 
+                  }}
+                >
+                  <div className="bg-green-500/90 text-white px-8 py-4 rounded-lg text-2xl font-bold rotate-[-20deg] flex items-center gap-3">
+                    <Heart className="w-8 h-8" fill="currentColor" />
+                    <span>Accept</span>
+                  </div>
+                </div>
+                <div 
+                  className="absolute inset-0 z-10 pointer-events-none rounded-lg flex items-center justify-center"
+                  style={{ 
+                    opacity: touchStart && touchCurrent && (touchCurrent.x - touchStart.x) < 0 ? getOverlayOpacity() : 0 
+                  }}
+                >
+                  <div className="bg-red-500/90 text-white px-8 py-4 rounded-lg text-2xl font-bold rotate-[20deg] flex items-center gap-3">
+                    <X className="w-8 h-8" strokeWidth={3} />
+                    <span>Skip</span>
+                  </div>
+                </div>
+
+                <Card className="shadow-warm animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {selectedRestaurant.photoUrl ? (
                   <div className="relative w-full h-64 overflow-hidden rounded-t-lg">
                     <img 
@@ -323,6 +425,7 @@ const RandomPick = () => {
                   </div>
                 </CardContent>
               </Card>
+              </div>
             )}
           </div>
         )}
