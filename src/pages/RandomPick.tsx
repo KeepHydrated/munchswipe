@@ -2,14 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Star, Navigation, Shuffle, Image as ImageIcon, Clock, ChevronDown, Heart, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { MapPin, Star, Navigation, Shuffle, Image as ImageIcon, Clock, ChevronDown, Heart, X, Share2, Sparkles } from 'lucide-react';
 import { useRestaurants } from '@/contexts/RestaurantContext';
+import { useSession } from '@/hooks/useSession';
+import { useMatches } from '@/hooks/useMatches';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 const RandomPick = () => {
   const { restaurants } = useRestaurants();
   const [selectedRestaurant, setSelectedRestaurant] = useState<typeof restaurants[0] | null>(null);
   const [recentlyShown, setRecentlyShown] = useState<string[]>([]);
   const [showHours, setShowHours] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showMatchesDialog, setShowMatchesDialog] = useState(false);
+  
+  // Session and matching
+  const { sessionId, partnerSessionId, generateShareLink } = useSession();
+  const { matches, matchedRestaurantIds } = useMatches(sessionId, partnerSessionId);
   
   // Swipe state
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
@@ -102,6 +113,26 @@ const RandomPick = () => {
     setTouchCurrent({ x: touch.clientX, y: touch.clientY });
   };
 
+  const handleSwipe = async (liked: boolean) => {
+    if (!selectedRestaurant || !sessionId) return;
+
+    // Save swipe to database
+    await supabase.from('restaurant_swipes').insert({
+      session_id: sessionId,
+      restaurant_id: selectedRestaurant.id,
+      restaurant_name: selectedRestaurant.name,
+      restaurant_data: selectedRestaurant as any,
+      liked: liked,
+    } as any);
+
+    if (liked && matchedRestaurantIds.has(selectedRestaurant.id)) {
+      toast({
+        title: "🎉 It's a Match!",
+        description: `You both like ${selectedRestaurant.name}!`,
+      });
+    }
+  };
+
   const handleTouchEnd = () => {
     if (!touchStart || !touchCurrent) {
       setIsSwiping(false);
@@ -115,17 +146,29 @@ const RandomPick = () => {
     
     // Only trigger if horizontal swipe is more significant than vertical
     if (Math.abs(deltaX) > 100 && Math.abs(deltaX) > deltaY) {
-      if (deltaX < 0) {
-        // Swipe left - pick another
-        getRandomRestaurant();
+      if (deltaX > 0) {
+        // Swipe right - like
+        handleSwipe(true);
+      } else {
+        // Swipe left - dislike
+        handleSwipe(false);
       }
-      // Swipe right - accept (do nothing, just reset)
+      getRandomRestaurant();
     }
 
     // Reset swipe state
     setIsSwiping(false);
     setTouchStart(null);
     setTouchCurrent(null);
+  };
+
+  const copyShareLink = () => {
+    const link = generateShareLink();
+    navigator.clipboard.writeText(link);
+    toast({
+      title: "Link Copied!",
+      description: "Share this link with someone to match restaurants",
+    });
   };
 
   // Calculate swipe transform
@@ -175,6 +218,63 @@ const RandomPick = () => {
                 Random Pick
               </h1>
             </div>
+            <div className="flex items-center gap-2">
+              {partnerSessionId && matches.length > 0 && (
+                <Dialog open={showMatchesDialog} onOpenChange={setShowMatchesDialog}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      {matches.length} Match{matches.length !== 1 && 'es'}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Your Matches</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {matches.map((match) => (
+                        <Card key={match.id}>
+                          <CardContent className="p-4">
+                            <h3 className="font-semibold">{match.restaurant_name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              You both liked this restaurant!
+                            </p>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
+              <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Share2 className="w-4 h-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Share Your Link</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Share this link with someone. When they like the same restaurants as you, you'll both see matches!
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={generateShareLink()}
+                        className="flex-1 px-3 py-2 border rounded-md bg-muted text-sm"
+                      />
+                      <Button onClick={copyShareLink}>
+                        Copy
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </div>
       </div>
@@ -220,7 +320,7 @@ const RandomPick = () => {
                 >
                   <div className="bg-green-500/90 text-white px-8 py-4 rounded-lg text-2xl font-bold rotate-[-20deg] flex items-center gap-3">
                     <Heart className="w-8 h-8" fill="currentColor" />
-                    <span>Accept</span>
+                    <span>Like</span>
                   </div>
                 </div>
                 <div 
@@ -231,9 +331,17 @@ const RandomPick = () => {
                 >
                   <div className="bg-red-500/90 text-white px-8 py-4 rounded-lg text-2xl font-bold rotate-[20deg] flex items-center gap-3">
                     <X className="w-8 h-8" strokeWidth={3} />
-                    <span>Skip</span>
+                    <span>Pass</span>
                   </div>
                 </div>
+
+                {/* Match indicator */}
+                {selectedRestaurant && matchedRestaurantIds.has(selectedRestaurant.id) && (
+                  <div className="absolute top-4 right-4 z-20 bg-yellow-500 text-white px-4 py-2 rounded-full flex items-center gap-2 shadow-lg animate-bounce">
+                    <Sparkles className="w-5 h-5" />
+                    <span className="font-bold">Potential Match!</span>
+                  </div>
+                )}
 
                 <Card className="shadow-warm animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {selectedRestaurant.photoUrl ? (
@@ -387,24 +495,39 @@ const RandomPick = () => {
 
                   <div className="pt-4 flex gap-3">
                     <Button 
-                      onClick={getRandomRestaurant}
+                      onClick={() => {
+                        handleSwipe(false);
+                        getRandomRestaurant();
+                      }}
                       className="flex-1 transition-smooth"
                       variant="outline"
                     >
-                      <Shuffle className="w-4 h-4 mr-2" />
-                      Pick Another
+                      <X className="w-4 h-4 mr-2" />
+                      Pass
                     </Button>
                     <Button 
                       onClick={() => {
-                        const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${selectedRestaurant.latitude},${selectedRestaurant.longitude}`;
-                        window.open(mapsUrl, '_blank');
+                        handleSwipe(true);
+                        getRandomRestaurant();
                       }}
                       className="flex-1 bg-gradient-primary hover:shadow-warm transition-bounce"
                     >
-                      <Navigation className="w-4 h-4 mr-2" />
-                      Get Directions
+                      <Heart className="w-4 h-4 mr-2" />
+                      Like It
                     </Button>
                   </div>
+                  
+                  <Button 
+                    onClick={() => {
+                      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${selectedRestaurant.latitude},${selectedRestaurant.longitude}`;
+                      window.open(mapsUrl, '_blank');
+                    }}
+                    className="w-full mt-3"
+                    variant="outline"
+                  >
+                    <Navigation className="w-4 h-4 mr-2" />
+                    Get Directions
+                  </Button>
                 </CardContent>
               </Card>
               </div>

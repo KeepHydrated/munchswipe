@@ -14,7 +14,107 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      restaurant_matches: {
+        Row: {
+          created_at: string | null
+          id: string
+          restaurant_data: Json
+          restaurant_id: string
+          restaurant_name: string
+          session_1_id: string
+          session_2_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          restaurant_data: Json
+          restaurant_id: string
+          restaurant_name: string
+          session_1_id: string
+          session_2_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          restaurant_data?: Json
+          restaurant_id?: string
+          restaurant_name?: string
+          session_1_id?: string
+          session_2_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_matches_session_1_id_fkey"
+            columns: ["session_1_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_matches_session_2_id_fkey"
+            columns: ["session_2_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restaurant_swipes: {
+        Row: {
+          created_at: string | null
+          id: string
+          liked: boolean
+          restaurant_data: Json
+          restaurant_id: string
+          restaurant_name: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          liked: boolean
+          restaurant_data: Json
+          restaurant_id: string
+          restaurant_name: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          liked?: boolean
+          restaurant_data?: Json
+          restaurant_id?: string
+          restaurant_name?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_swipes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          created_at: string | null
+          id: string
+          user_name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          user_name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          user_name?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
