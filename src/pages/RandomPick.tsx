@@ -454,81 +454,67 @@ const RandomPick = () => {
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
-      {/* Header */}
-      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border shadow-card">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <Shuffle className="w-5 h-5 text-primary-foreground" />
+      {/* Floating action buttons */}
+      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+        {partnerSessionId && matches.length > 0 && (
+          <Dialog open={showMatchesDialog} onOpenChange={setShowMatchesDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2 shadow-lg">
+                <Sparkles className="w-4 h-4" />
+                {matches.length} Match{matches.length !== 1 && 'es'}
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Your Matches</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {matches.map((match) => (
+                  <Card key={match.id}>
+                    <CardContent className="p-4">
+                      <h3 className="font-semibold">{match.restaurant_name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        You both liked this restaurant!
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-              <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                Random Pick
-              </h1>
+            </DialogContent>
+          </Dialog>
+        )}
+        <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" className="shadow-lg">
+              <Share2 className="w-4 h-4" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Share Your Link</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Share this link with someone. When they like the same restaurants as you, you'll both see matches!
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={generateShareLink()}
+                  className="flex-1 px-3 py-2 border rounded-md bg-muted text-sm"
+                />
+                <Button onClick={copyShareLink}>
+                  Copy
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {partnerSessionId && matches.length > 0 && (
-                <Dialog open={showMatchesDialog} onOpenChange={setShowMatchesDialog}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <Sparkles className="w-4 h-4" />
-                      {matches.length} Match{matches.length !== 1 && 'es'}
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Your Matches</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {matches.map((match) => (
-                        <Card key={match.id}>
-                          <CardContent className="p-4">
-                            <h3 className="font-semibold">{match.restaurant_name}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              You both liked this restaurant!
-                            </p>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
-              <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Share2 className="w-4 h-4" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Share Your Link</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                      Share this link with someone. When they like the same restaurants as you, you'll both see matches!
-                    </p>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        readOnly
-                        value={generateShareLink()}
-                        className="flex-1 px-3 py-2 border rounded-md bg-muted text-sm"
-                      />
-                      <Button onClick={copyShareLink}>
-                        Copy
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-12">
+      <div className="max-w-4xl mx-auto px-4 py-8">
         {restaurants.length === 0 ? (
           <Card className="shadow-warm">
             <CardContent className="text-center py-12">
