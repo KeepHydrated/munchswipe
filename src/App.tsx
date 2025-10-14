@@ -19,8 +19,9 @@ const App = () => (
       <RestaurantProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<RestaurantFinder />} />
+            <Route path="/" element={<RandomPick />} />
             <Route path="/random" element={<RandomPick />} />
+            <Route path="/finder" element={<RestaurantFinder />} />
             <Route path="/likes" element={<Likes />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
