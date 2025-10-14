@@ -24,6 +24,7 @@ interface Restaurant {
   photoUrl?: string;
   openNow?: boolean;
   openingHours?: string[];
+  description?: string;
 }
 
 const RestaurantFinder = () => {
@@ -140,7 +141,7 @@ const RestaurantFinder = () => {
                 service.getDetails(
                   {
                     placeId: place.place_id!,
-                    fields: ['name', 'types', 'rating', 'opening_hours', 'photos', 'vicinity', 'geometry']
+                    fields: ['name', 'types', 'rating', 'opening_hours', 'photos', 'vicinity', 'geometry', 'editorial_summary']
                   },
                   (detailResult, detailStatus) => {
                     if (detailStatus === google.maps.places.PlacesServiceStatus.OK && detailResult) {
@@ -235,6 +236,7 @@ const RestaurantFinder = () => {
                         photoUrl,
                         openNow,
                         openingHours,
+                        description: (detailResult as any).editorial_summary?.overview,
                       });
                     }
                     resolve();

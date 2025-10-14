@@ -183,6 +183,11 @@ const RandomPick = () => {
                       {selectedRestaurant.cuisine}
                     </p>
                   )}
+                  {selectedRestaurant.description && (
+                    <p className="text-sm text-muted-foreground mt-3 italic max-w-2xl mx-auto">
+                      {selectedRestaurant.description}
+                    </p>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-4">
