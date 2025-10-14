@@ -11,18 +11,63 @@ const RandomPick = () => {
   const [selectedRestaurant, setSelectedRestaurant] = useState<typeof restaurants[0] | null>(null);
   const [recentlyShown, setRecentlyShown] = useState<string[]>([]);
 
+  // Helper function to check if restaurant is open now or will be open in next hour
+  const isOpenOrOpeningSoon = (restaurant: typeof restaurants[0]) => {
+    if (!restaurant.openingHours || restaurant.openingHours.length === 0) return false;
+    
+    const now = new Date();
+    const currentDay = now.getDay();
+    const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight
+    const oneHourLater = currentTime + 60;
+    
+    const todayHours = restaurant.openingHours[currentDay];
+    if (!todayHours) return false;
+    
+    // Extract time range from string like "Monday: 9:00 AM – 10:00 PM"
+    const timeMatch = todayHours.match(/(\d+):(\d+)\s*(AM|PM)\s*[–-]\s*(\d+):(\d+)\s*(AM|PM)/i);
+    if (!timeMatch) return false;
+    
+    let openHour = parseInt(timeMatch[1]);
+    const openMin = parseInt(timeMatch[2]);
+    const openPeriod = timeMatch[3].toUpperCase();
+    let closeHour = parseInt(timeMatch[4]);
+    const closeMin = parseInt(timeMatch[5]);
+    const closePeriod = timeMatch[6].toUpperCase();
+    
+    // Convert to 24-hour format
+    if (openPeriod === 'PM' && openHour !== 12) openHour += 12;
+    if (openPeriod === 'AM' && openHour === 12) openHour = 0;
+    if (closePeriod === 'PM' && closeHour !== 12) closeHour += 12;
+    if (closePeriod === 'AM' && closeHour === 12) closeHour = 0;
+    
+    const openTime = openHour * 60 + openMin;
+    const closeTime = closeHour * 60 + closeMin;
+    
+    // Check if currently open OR will open within next hour
+    const isCurrentlyOpen = currentTime >= openTime && currentTime < closeTime;
+    const willOpenSoon = openTime > currentTime && openTime <= oneHourLater;
+    
+    return isCurrentlyOpen || willOpenSoon;
+  };
+
   const getRandomRestaurant = () => {
-    if (restaurants.length === 0) return;
+    // First filter for restaurants that are open now or opening soon
+    const openOrOpeningSoon = restaurants.filter(isOpenOrOpeningSoon);
+    
+    if (openOrOpeningSoon.length === 0) {
+      setSelectedRestaurant(null);
+      return;
+    }
     
     // Get restaurants that haven't been shown recently
-    const availableRestaurants = restaurants.filter(
+    const availableRestaurants = openOrOpeningSoon.filter(
       r => !recentlyShown.includes(r.id)
     );
     
     // If all restaurants have been shown, reset the history but keep current one
     const poolToChooseFrom = availableRestaurants.length > 0 
       ? availableRestaurants 
-      : restaurants.filter(r => r.id !== selectedRestaurant?.id);
+      : openOrOpeningSoon.filter(r => r.id !== selectedRestaurant?.id);
     
     // Pick a random restaurant from the available pool
     const randomIndex = Math.floor(Math.random() * poolToChooseFrom.length);
@@ -31,7 +76,7 @@ const RandomPick = () => {
     setSelectedRestaurant(newRestaurant);
     
     // Update recently shown list (keep last 5 or half of total restaurants, whichever is smaller)
-    const maxHistory = Math.min(5, Math.floor(restaurants.length / 2));
+    const maxHistory = Math.min(5, Math.floor(openOrOpeningSoon.length / 2));
     setRecentlyShown(prev => {
       const updated = [...prev, newRestaurant.id];
       return updated.slice(-maxHistory);
@@ -82,6 +127,22 @@ const RandomPick = () => {
                 <Button className="bg-gradient-primary hover:shadow-warm transition-bounce">
                   <Navigation className="w-4 h-4 mr-2" />
                   Find Restaurants
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        ) : !selectedRestaurant ? (
+          <Card className="shadow-warm">
+            <CardContent className="text-center py-12">
+              <Clock className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+              <h2 className="text-xl font-semibold mb-2">No Restaurants Currently Open</h2>
+              <p className="text-muted-foreground mb-6">
+                No restaurants are open now or opening within the next hour. Try again later!
+              </p>
+              <Link to="/">
+                <Button className="bg-gradient-primary hover:shadow-warm transition-bounce">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to List
                 </Button>
               </Link>
             </CardContent>
