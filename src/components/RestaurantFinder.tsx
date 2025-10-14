@@ -61,13 +61,31 @@ const RestaurantFinder = () => {
       },
       (error) => {
         setLoading(false);
+        let errorMessage = "Unable to get your location";
+        
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "Please enable location permissions in your browser settings";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "Location information unavailable. Try again in a moment";
+            break;
+          case error.TIMEOUT:
+            errorMessage = "Location request timed out. Please try again";
+            break;
+        }
+        
         toast({
           title: "Location Error",
-          description: `Failed to get location: ${error.message}`,
+          description: errorMessage,
           variant: "destructive",
         });
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      { 
+        enableHighAccuracy: false, // Faster on mobile
+        timeout: 30000, // 30 seconds for mobile
+        maximumAge: 300000 // 5 minutes cache
+      }
     );
   }, [toast]);
 
