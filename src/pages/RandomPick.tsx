@@ -783,7 +783,7 @@ const RandomPick = () => {
                     })()}
                   </div>
 
-                  <div className="pt-4 flex gap-3">
+                  <div className="pt-4 hidden md:flex gap-3">
                     <Button 
                       onClick={() => {
                         handleSwipe(false);
