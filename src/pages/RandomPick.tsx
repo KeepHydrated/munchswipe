@@ -338,8 +338,8 @@ const RandomPick = () => {
     const deltaX = Math.abs(touch.clientX - touchStart.x);
     const deltaY = Math.abs(touch.clientY - touchStart.y);
     
-    // Only prevent default if horizontal swipe is clearly dominant
-    if (deltaX > 20 && deltaX > deltaY * 1.5) {
+    // Prevent scrolling if this is clearly a horizontal swipe
+    if (deltaX > 30 && deltaX > deltaY) {
       e.preventDefault();
     }
   };
@@ -375,8 +375,8 @@ const RandomPick = () => {
     const deltaX = touchCurrent.x - touchStart.x;
     const deltaY = Math.abs(touchCurrent.y - touchStart.y);
     
-    // Only trigger if horizontal swipe is more significant than vertical
-    if (Math.abs(deltaX) > 100 && Math.abs(deltaX) > deltaY) {
+    // Trigger swipe if horizontal movement is significant and greater than vertical
+    if (Math.abs(deltaX) > 80 && Math.abs(deltaX) > deltaY * 1.2) {
       if (deltaX > 0) {
         // Swipe right - like
         handleSwipe(true);
