@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Navigation, Shuffle } from 'lucide-react';
+import { MapPin, Navigation, Shuffle, Heart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRestaurants } from '@/contexts/RestaurantContext';
 import { Link } from 'react-router-dom';
@@ -335,6 +335,16 @@ const RestaurantFinder = () => {
                 >
                   <Shuffle className="w-4 h-4 mr-2" />
                   Random Pick
+                </Button>
+              </Link>
+              <Link to="/likes">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="transition-smooth hover:shadow-glow"
+                >
+                  <Heart className="w-4 h-4 mr-2" />
+                  My Likes
                 </Button>
               </Link>
               <Button

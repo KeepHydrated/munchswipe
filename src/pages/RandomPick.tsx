@@ -10,9 +10,11 @@ import { useMatches } from '@/hooks/useMatches';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { loadGoogleMaps } from '@/lib/googleMapsLoader';
+import { useNavigate } from 'react-router-dom';
 
 const RandomPick = () => {
   const { restaurants, setRestaurants, userLocation, setUserLocation } = useRestaurants();
+  const navigate = useNavigate();
   const [selectedRestaurant, setSelectedRestaurant] = useState<typeof restaurants[0] | null>(null);
   const [recentlyShown, setRecentlyShown] = useState<string[]>([]);
   const [showHours, setShowHours] = useState(false);
@@ -496,6 +498,15 @@ const RandomPick = () => {
               </div>
             </div>
             <div className="flex-1 flex items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/likes')}
+                className="gap-2"
+              >
+                <Heart className="h-4 w-4" />
+                Likes
+              </Button>
               {partnerSessionId && matches.length > 0 && (
               <Dialog open={showMatchesDialog} onOpenChange={setShowMatchesDialog}>
                 <DialogTrigger asChild>
