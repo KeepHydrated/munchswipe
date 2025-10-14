@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Star, Navigation, Shuffle, ArrowLeft, Image as ImageIcon, Clock, ChevronDown, Heart, X } from 'lucide-react';
+import { MapPin, Star, Navigation, Shuffle, Image as ImageIcon, Clock, ChevronDown, Heart, X } from 'lucide-react';
 import { useRestaurants } from '@/contexts/RestaurantContext';
-import { Link } from 'react-router-dom';
 
 const RandomPick = () => {
   const { restaurants } = useRestaurants();
@@ -169,11 +168,6 @@ const RandomPick = () => {
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <Link to="/">
-                <Button variant="ghost" size="icon" className="transition-smooth">
-                  <ArrowLeft className="w-5 h-5" />
-                </Button>
-              </Link>
               <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
                 <Shuffle className="w-5 h-5 text-primary-foreground" />
               </div>
@@ -191,16 +185,10 @@ const RandomPick = () => {
           <Card className="shadow-warm">
             <CardContent className="text-center py-12">
               <MapPin className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-              <h2 className="text-xl font-semibold mb-2">No Restaurants Found</h2>
-              <p className="text-muted-foreground mb-6">
-                Please go to the main page to find restaurants near you first.
+              <h2 className="text-xl font-semibold mb-2">Loading Restaurants...</h2>
+              <p className="text-muted-foreground">
+                Finding restaurants near you. This may take a moment.
               </p>
-              <Link to="/">
-                <Button className="bg-gradient-primary hover:shadow-warm transition-bounce">
-                  <Navigation className="w-4 h-4 mr-2" />
-                  Find Restaurants
-                </Button>
-              </Link>
             </CardContent>
           </Card>
         ) : !selectedRestaurant ? (
@@ -208,15 +196,9 @@ const RandomPick = () => {
             <CardContent className="text-center py-12">
               <Clock className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
               <h2 className="text-xl font-semibold mb-2">No Restaurants Currently Open</h2>
-              <p className="text-muted-foreground mb-6">
+              <p className="text-muted-foreground">
                 No restaurants are open now or opening within the next hour. Try again later!
               </p>
-              <Link to="/">
-                <Button className="bg-gradient-primary hover:shadow-warm transition-bounce">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to List
-                </Button>
-              </Link>
             </CardContent>
           </Card>
         ) : (
