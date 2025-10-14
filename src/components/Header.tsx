@@ -28,7 +28,15 @@ export const Header = () => {
     <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border shadow-card">
       <div className="max-w-4xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex-1"></div>
+          <div className="flex-1 flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/likes')}
+            >
+              <Heart className="h-4 w-4" />
+            </Button>
+          </div>
           <button 
             onClick={() => navigate('/random')}
             className="flex items-center justify-center transition-transform hover:scale-105"
@@ -38,13 +46,6 @@ export const Header = () => {
             </div>
           </button>
           <div className="flex-1 flex items-center justify-end gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/likes')}
-            >
-              <Heart className="h-4 w-4" />
-            </Button>
             {partnerSessionId && matches.length > 0 && (
               <Dialog open={showMatchesDialog} onOpenChange={setShowMatchesDialog}>
                 <DialogTrigger asChild>
