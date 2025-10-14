@@ -481,7 +481,7 @@ const RandomPick = () => {
       <Header />
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-12">
+      <div className="max-w-4xl mx-auto px-4 py-6">
         {restaurants.length === 0 ? (
           <Card className="shadow-warm">
             <CardContent className="text-center py-12">
