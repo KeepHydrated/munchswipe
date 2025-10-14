@@ -141,21 +141,55 @@ const RandomPick = () => {
                       </div>
                     )}
 
-                    {selectedRestaurant.openingHours && selectedRestaurant.openingHours.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center space-x-2 mb-3">
-                          <Clock className="w-5 h-5 text-primary" />
-                          <h3 className="font-semibold">Opening Hours</h3>
+                    {selectedRestaurant.openingHours && selectedRestaurant.openingHours.length > 0 && (() => {
+                      // Group consecutive days with the same hours
+                      const groupedHours: { days: string; hours: string }[] = [];
+                      let currentGroup: { start: number; end: number; hours: string } | null = null;
+
+                      selectedRestaurant.openingHours.forEach((hoursStr, index) => {
+                        // Extract just the hours part (after the day name and colon)
+                        const hoursPart = hoursStr.includes(':') ? hoursStr.split(':').slice(1).join(':').trim() : hoursStr;
+                        
+                        if (!currentGroup) {
+                          currentGroup = { start: index, end: index, hours: hoursPart };
+                        } else if (currentGroup.hours === hoursPart) {
+                          currentGroup.end = index;
+                        } else {
+                          // Save the current group and start a new one
+                          const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                          const daysLabel = currentGroup.start === currentGroup.end 
+                            ? dayNames[currentGroup.start]
+                            : `${dayNames[currentGroup.start]}-${dayNames[currentGroup.end]}`;
+                          groupedHours.push({ days: daysLabel, hours: currentGroup.hours });
+                          currentGroup = { start: index, end: index, hours: hoursPart };
+                        }
+                      });
+
+                      // Don't forget the last group
+                      if (currentGroup) {
+                        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                        const daysLabel = currentGroup.start === currentGroup.end 
+                          ? dayNames[currentGroup.start]
+                          : `${dayNames[currentGroup.start]}-${dayNames[currentGroup.end]}`;
+                        groupedHours.push({ days: daysLabel, hours: currentGroup.hours });
+                      }
+
+                      return (
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2 mb-3">
+                            <Clock className="w-5 h-5 text-primary" />
+                            <h3 className="font-semibold">Opening Hours</h3>
+                          </div>
+                          <div className="space-y-1 text-sm">
+                            {groupedHours.map((group, index) => (
+                              <p key={index} className="text-muted-foreground">
+                                {group.days}: {group.hours}
+                              </p>
+                            ))}
+                          </div>
                         </div>
-                        <div className="space-y-1 text-sm">
-                          {selectedRestaurant.openingHours.map((hours, index) => (
-                            <p key={index} className="text-muted-foreground">
-                              {hours}
-                            </p>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
 
                   <div className="pt-4 flex gap-3">
