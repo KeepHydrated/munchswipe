@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, Share2, Sparkles, UtensilsCrossed, Home } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Heart, Share2, Sparkles, UtensilsCrossed } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useSession } from '@/hooks/useSession';
 import { useMatches } from '@/hooks/useMatches';
@@ -10,7 +10,6 @@ import { toast } from '@/hooks/use-toast';
 
 export const Header = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showMatchesDialog, setShowMatchesDialog] = useState(false);
   const { sessionId, partnerSessionId, generateShareLink } = useSession();
@@ -24,8 +23,6 @@ export const Header = () => {
       description: "Share this link with someone to match restaurants",
     });
   };
-
-  const isOnRandomPage = location.pathname === '/random' || location.pathname === '/';
 
   return (
     <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border shadow-card">
@@ -41,25 +38,13 @@ export const Header = () => {
             </div>
           </button>
           <div className="flex-1 flex items-center justify-end gap-2">
-            {isOnRandomPage ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/likes')}
-              >
-                <Heart className="h-4 w-4" />
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/random')}
-                className="gap-2"
-              >
-                <Home className="h-4 w-4" />
-                Home
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/likes')}
+            >
+              <Heart className="h-4 w-4" />
+            </Button>
             {partnerSessionId && matches.length > 0 && (
               <Dialog open={showMatchesDialog} onOpenChange={setShowMatchesDialog}>
                 <DialogTrigger asChild>
