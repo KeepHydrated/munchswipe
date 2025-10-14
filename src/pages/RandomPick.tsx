@@ -142,6 +142,38 @@ const RandomPick = () => {
                     )}
 
                     {selectedRestaurant.openingHours && selectedRestaurant.openingHours.length > 0 && (() => {
+                      // Check if currently open
+                      const now = new Date();
+                      const currentDay = now.getDay();
+                      const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight
+                      
+                      let isOpen = false;
+                      const todayHours = selectedRestaurant.openingHours[currentDay];
+                      
+                      if (todayHours) {
+                        // Extract time range from string like "Monday: 9:00 AM – 10:00 PM"
+                        const timeMatch = todayHours.match(/(\d+):(\d+)\s*(AM|PM)\s*[–-]\s*(\d+):(\d+)\s*(AM|PM)/i);
+                        if (timeMatch) {
+                          let openHour = parseInt(timeMatch[1]);
+                          const openMin = parseInt(timeMatch[2]);
+                          const openPeriod = timeMatch[3].toUpperCase();
+                          let closeHour = parseInt(timeMatch[4]);
+                          const closeMin = parseInt(timeMatch[5]);
+                          const closePeriod = timeMatch[6].toUpperCase();
+                          
+                          // Convert to 24-hour format
+                          if (openPeriod === 'PM' && openHour !== 12) openHour += 12;
+                          if (openPeriod === 'AM' && openHour === 12) openHour = 0;
+                          if (closePeriod === 'PM' && closeHour !== 12) closeHour += 12;
+                          if (closePeriod === 'AM' && closeHour === 12) closeHour = 0;
+                          
+                          const openTime = openHour * 60 + openMin;
+                          const closeTime = closeHour * 60 + closeMin;
+                          
+                          isOpen = currentTime >= openTime && currentTime < closeTime;
+                        }
+                      }
+
                       // Group consecutive days with the same hours
                       const groupedHours: { days: string; hours: string }[] = [];
                       let currentGroup: { start: number; end: number; hours: string } | null = null;
@@ -177,8 +209,10 @@ const RandomPick = () => {
                       return (
                         <div className="space-y-2">
                           <div className="flex items-center space-x-2 mb-3">
-                            <Clock className="w-5 h-5 text-primary" />
-                            <h3 className="font-semibold">Opening Hours</h3>
+                            <Clock className="w-5 h-5 text-muted-foreground" />
+                            <h3 className={`font-semibold ${isOpen ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
+                              Currently {isOpen ? 'Open' : 'Closed'}
+                            </h3>
                           </div>
                           <div className="space-y-1 text-sm">
                             {groupedHours.map((group, index) => (
