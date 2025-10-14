@@ -65,7 +65,7 @@ const RestaurantFinder = () => {
         variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [toast, setUserLocation]);
 
   const fetchRestaurants = useCallback(async () => {
     if (!userLocation) {
@@ -274,7 +274,7 @@ const RestaurantFinder = () => {
         variant: "destructive",
       });
     }
-  }, [userLocation, toast]);
+  }, [userLocation, toast, setRestaurants]);
 
   useEffect(() => {
     loadGoogleMaps(googleMapsApiKey).then(() => {
