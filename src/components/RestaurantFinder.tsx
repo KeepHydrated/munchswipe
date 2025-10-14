@@ -35,85 +35,36 @@ const RestaurantFinder = () => {
   
   const { toast } = useToast();
 
-  const getCurrentLocation = useCallback(() => {
-    if (!navigator.geolocation) {
-      toast({
-        title: "Location Error",
-        description: "Geolocation is not supported by your browser",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const getCurrentLocation = useCallback(async () => {
     setLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
+    
+    // Use IP-based location as default
+    try {
+      const response = await fetch('https://ipapi.co/json/');
+      const data = await response.json();
+      
+      if (data.latitude && data.longitude) {
         const location = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
+          latitude: data.latitude,
+          longitude: data.longitude,
         };
         setUserLocation(location);
         setLoading(false);
         toast({
           title: "Location Found",
-          description: "Successfully got your current location!",
+          description: `Using location: ${data.city}, ${data.region}`,
         });
-      },
-      async (error) => {
-        // If GPS fails, try IP-based location as fallback
-        if (error.code === error.PERMISSION_DENIED) {
-          try {
-            const response = await fetch('https://ipapi.co/json/');
-            const data = await response.json();
-            
-            if (data.latitude && data.longitude) {
-              const location = {
-                latitude: data.latitude,
-                longitude: data.longitude,
-              };
-              setUserLocation(location);
-              setLoading(false);
-              toast({
-                title: "Location Found (IP-based)",
-                description: `Using approximate location: ${data.city}, ${data.region}`,
-              });
-              return;
-            }
-          } catch (ipError) {
-            console.error('IP geolocation failed:', ipError);
-          }
-        }
-        
-        setLoading(false);
-        let errorMessage = "Unable to get your location";
-        let instructions = "";
-        
-        switch(error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = "Location access blocked";
-            instructions = "Tap the 🔒 or ⓘ icon in your browser's address bar, then enable Location permissions. Refresh the page after enabling.";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = "Location information unavailable. Try again in a moment";
-            break;
-          case error.TIMEOUT:
-            errorMessage = "Location request timed out. Please try again";
-            break;
-        }
-        
-        toast({
-          title: errorMessage,
-          description: instructions || errorMessage,
-          variant: "destructive",
-          duration: 10000,
-        });
-      },
-      { 
-        enableHighAccuracy: false, // Faster on mobile
-        timeout: 30000, // 30 seconds for mobile
-        maximumAge: 300000 // 5 minutes cache
+        return;
       }
-    );
+    } catch (ipError) {
+      console.error('IP geolocation failed:', ipError);
+      setLoading(false);
+      toast({
+        title: "Location Error",
+        description: "Unable to detect your location. Please try again.",
+        variant: "destructive",
+      });
+    }
   }, [toast]);
 
   const fetchRestaurants = useCallback(async () => {
