@@ -333,20 +333,14 @@ const RandomPick = () => {
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!touchStart) return;
     const touch = e.touches[0];
+    setTouchCurrent({ x: touch.clientX, y: touch.clientY });
+    
     const deltaX = Math.abs(touch.clientX - touchStart.x);
     const deltaY = Math.abs(touch.clientY - touchStart.y);
     
-    // Determine if this is a horizontal swipe or vertical scroll
-    // Only engage swipe mode if horizontal movement is clearly dominant
+    // Only prevent default if horizontal swipe is clearly dominant
     if (deltaX > 20 && deltaX > deltaY * 1.5) {
-      // This is a horizontal swipe
       e.preventDefault();
-      setTouchCurrent({ x: touch.clientX, y: touch.clientY });
-    } else if (deltaY > 20) {
-      // This is vertical scrolling - cancel swipe
-      setIsSwiping(false);
-      setTouchStart(null);
-      setTouchCurrent(null);
     }
   };
 
