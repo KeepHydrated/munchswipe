@@ -248,10 +248,6 @@ const RestaurantFinder = () => {
             console.log('Processed restaurants with cuisine data:', sortedRestaurants.map(r => ({ name: r.name, cuisine: r.cuisine })));
             setRestaurants(sortedRestaurants);
             setLoading(false);
-            toast({
-              title: "Success",
-              description: `Found ${sortedRestaurants.length} restaurants nearby!`,
-            });
           }
         } else {
           console.error('Places API error status:', status);
