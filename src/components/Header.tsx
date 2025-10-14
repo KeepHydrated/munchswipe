@@ -1,19 +1,15 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Card, CardContent } from '@/components/ui/card';
-import { Heart, Share2, Sparkles, UtensilsCrossed } from 'lucide-react';
+import { Heart, Share2, UtensilsCrossed } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useSession } from '@/hooks/useSession';
-import { useMatches } from '@/hooks/useMatches';
 import { toast } from '@/hooks/use-toast';
 
 export const Header = () => {
   const navigate = useNavigate();
   const [showShareDialog, setShowShareDialog] = useState(false);
-  const [showMatchesDialog, setShowMatchesDialog] = useState(false);
   const { sessionId, partnerSessionId, generateShareLink } = useSession();
-  const { matches } = useMatches(sessionId, partnerSessionId);
 
   const copyShareLink = () => {
     const link = generateShareLink();
@@ -46,33 +42,6 @@ export const Header = () => {
             </div>
           </button>
           <div className="flex-1 flex items-center justify-end gap-2">
-            {partnerSessionId && matches.length > 0 && (
-              <Dialog open={showMatchesDialog} onOpenChange={setShowMatchesDialog}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    {matches.length} Match{matches.length !== 1 && 'es'}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Your Matches</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {matches.map((match) => (
-                      <Card key={match.id}>
-                        <CardContent className="p-4">
-                          <h3 className="font-semibold">{match.restaurant_name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            You both liked this restaurant!
-                          </p>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </DialogContent>
-              </Dialog>
-            )}
             <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
