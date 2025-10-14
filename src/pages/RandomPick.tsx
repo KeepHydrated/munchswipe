@@ -488,9 +488,9 @@ const RandomPick = () => {
   }, [restaurants.length]);
 
   return (
-    <div className="min-h-screen max-h-screen overflow-hidden flex flex-col bg-gradient-subtle">
+    <div className="min-h-screen bg-gradient-subtle">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border shadow-card flex-shrink-0">
+      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border shadow-card">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex-1"></div>
@@ -570,9 +570,9 @@ const RandomPick = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden flex items-center justify-center px-4 py-12">
+      <div className="max-w-4xl mx-auto px-4 py-12">
         {restaurants.length === 0 ? (
-          <Card className="shadow-warm w-full max-w-4xl">
+          <Card className="shadow-warm">
             <CardContent className="text-center py-12">
               <MapPin className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
               <h2 className="text-xl font-semibold mb-2">Loading Restaurants...</h2>
@@ -582,7 +582,7 @@ const RandomPick = () => {
             </CardContent>
           </Card>
         ) : !selectedRestaurant ? (
-          <Card className="shadow-warm w-full max-w-4xl">
+          <Card className="shadow-warm">
             <CardContent className="text-center py-12">
               <Clock className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
               <h2 className="text-xl font-semibold mb-2">No Restaurants Currently Open</h2>
@@ -592,10 +592,10 @@ const RandomPick = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="w-full max-w-4xl h-full flex items-center justify-center">
+          <div className="space-y-8">
             {selectedRestaurant && (
               <div 
-                className="relative w-full h-[calc(100vh-8rem)]"
+                className="relative"
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
@@ -633,10 +633,9 @@ const RandomPick = () => {
                   </div>
                 )}
 
-                <Card className="shadow-warm animate-in fade-in slide-in-from-bottom-4 duration-500 h-full flex flex-col">
-                <div className="flex-shrink-0">
+                <Card className="shadow-warm animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {selectedRestaurant.photoUrl ? (
-                  <div className="relative w-full h-48 overflow-hidden rounded-t-lg">
+                  <div className="relative w-full h-64 overflow-hidden rounded-t-lg">
                     <img 
                       src={selectedRestaurant.photoUrl} 
                       alt={selectedRestaurant.name}
@@ -652,15 +651,13 @@ const RandomPick = () => {
                     />
                   </div>
                 ) : (
-                  <div className="relative w-full h-48 bg-gradient-subtle flex items-center justify-center rounded-t-lg">
+                  <div className="relative w-full h-64 bg-gradient-subtle flex items-center justify-center rounded-t-lg">
                     <div className="text-center">
                       <ImageIcon className="w-16 h-16 mx-auto text-muted-foreground mb-2" />
                       <p className="text-muted-foreground text-sm">No image available</p>
                     </div>
                   </div>
                 )}
-                </div>
-                <div className="flex-1 overflow-y-auto">
                 <CardHeader className="text-center pb-4">
                   <CardTitle className="text-3xl">{selectedRestaurant.name}</CardTitle>
                   {selectedRestaurant.cuisine && (
@@ -822,7 +819,6 @@ const RandomPick = () => {
                     Get Directions
                   </Button>
                 </CardContent>
-                </div>
               </Card>
               </div>
             )}
