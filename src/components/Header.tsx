@@ -18,6 +18,7 @@ export const Header = () => {
     toast({
       title: "Link Copied!",
       description: "Share this link with someone to match restaurants",
+      duration: 2000,
     });
   };
 
