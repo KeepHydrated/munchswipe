@@ -20,6 +20,10 @@ const RandomPick = () => {
   const [showHours, setShowHours] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleMapsApiKey] = useState('AIzaSyASk-OpxAIgawBXmdyFi-C7QMMPFDq7jlU');
+  const [hiddenRestaurants, setHiddenRestaurants] = useState<Set<string>>(() => {
+    const stored = localStorage.getItem('hiddenRestaurants');
+    return stored ? new Set(JSON.parse(stored)) : new Set();
+  });
   
   // Session and matching
   const { sessionId, partnerSessionId } = useSession();
@@ -315,8 +319,10 @@ const RandomPick = () => {
   };
 
   const getRandomRestaurant = () => {
-    // First filter for restaurants that are open now or opening soon
-    const openOrOpeningSoon = restaurants.filter(isOpenOrOpeningSoon);
+    // First filter for restaurants that are open now or opening soon AND not hidden
+    const openOrOpeningSoon = restaurants.filter(r => 
+      isOpenOrOpeningSoon(r) && !hiddenRestaurants.has(r.id)
+    );
     
     if (openOrOpeningSoon.length === 0) {
       setSelectedRestaurant(null);
@@ -370,9 +376,8 @@ const RandomPick = () => {
     const deltaX = Math.abs(touch.clientX - touchStart.x);
     const deltaY = Math.abs(touch.clientY - touchStart.y);
     
-    // Only prevent default if horizontal swipe is clearly dominant
-    // This allows vertical scrolling while preventing page bounce during swipes
-    if (deltaX > deltaY && deltaX > 20) {
+    // Prevent default for horizontal swipes OR downward swipes (to hide)
+    if ((deltaX > deltaY && deltaX > 20) || (touch.clientY > touchStart.y && deltaY > 20)) {
       e.preventDefault();
     }
   };
@@ -398,7 +403,7 @@ const RandomPick = () => {
   };
 
   const handleTouchEnd = () => {
-    if (!touchStart || !touchCurrent) {
+    if (!touchStart || !touchCurrent || !selectedRestaurant) {
       setIsSwiping(false);
       setTouchStart(null);
       setTouchCurrent(null);
@@ -406,10 +411,26 @@ const RandomPick = () => {
     }
 
     const deltaX = touchCurrent.x - touchStart.x;
-    const deltaY = Math.abs(touchCurrent.y - touchStart.y);
+    const deltaY = touchCurrent.y - touchStart.y;
+    const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
     
-    // Trigger swipe if horizontal movement is significant and greater than vertical
-    if (Math.abs(deltaX) > 80 && Math.abs(deltaX) > deltaY * 1.2) {
+    // Check for downward swipe (hide forever)
+    if (deltaY > 100 && absDeltaY > absDeltaX * 1.5) {
+      const newHidden = new Set(hiddenRestaurants);
+      newHidden.add(selectedRestaurant.id);
+      setHiddenRestaurants(newHidden);
+      localStorage.setItem('hiddenRestaurants', JSON.stringify([...newHidden]));
+      
+      toast({
+        title: "Hidden Forever",
+        description: `${selectedRestaurant.name} won't be suggested again`,
+      });
+      
+      getRandomRestaurant();
+    }
+    // Check for horizontal swipe (like/dislike)
+    else if (absDeltaX > 80 && absDeltaX > absDeltaY * 1.2) {
       if (deltaX > 0) {
         // Swipe right - like
         handleSwipe(true);
@@ -440,7 +461,15 @@ const RandomPick = () => {
     const absDeltaX = Math.abs(deltaX);
     const absDeltaY = Math.abs(deltaY);
     
-    // Only apply transform if this is clearly a horizontal swipe
+    // Check if this is a downward swipe
+    if (deltaY > 20 && absDeltaY > absDeltaX * 1.5) {
+      return {
+        transform: `translate(0px, ${deltaY}px) scale(${Math.max(0.8, 1 - deltaY / 500)})`,
+        transition: 'none',
+      };
+    }
+    
+    // Only apply horizontal transform if this is clearly a horizontal swipe
     if (absDeltaX < 20 || absDeltaX <= absDeltaY * 1.5) {
       return {
         transform: 'translate(0px, 0px) rotate(0deg)',
@@ -460,11 +489,17 @@ const RandomPick = () => {
   const getOverlayOpacity = () => {
     if (!touchStart || !touchCurrent || !isSwiping) return 0;
     const deltaX = touchCurrent.x - touchStart.x;
-    const deltaY = Math.abs(touchCurrent.y - touchStart.y);
+    const deltaY = touchCurrent.y - touchStart.y;
     const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
+    
+    // Check for downward swipe
+    if (deltaY > 20 && absDeltaY > absDeltaX * 1.5) {
+      return Math.min(deltaY / 150, 1);
+    }
     
     // Only show overlay for clear horizontal swipes
-    if (absDeltaX < 20 || absDeltaX <= deltaY * 1.5) return 0;
+    if (absDeltaX < 20 || absDeltaX <= absDeltaY * 1.5) return 0;
     
     return Math.min(absDeltaX / 150, 1);
   };
@@ -533,6 +568,17 @@ const RandomPick = () => {
                   <div className="bg-red-500/90 text-white px-8 py-4 rounded-lg text-2xl font-bold rotate-[20deg] flex items-center gap-3">
                     <X className="w-8 h-8" strokeWidth={3} />
                     <span>Pass</span>
+                  </div>
+                </div>
+                <div 
+                  className="absolute inset-0 z-10 pointer-events-none rounded-lg flex items-center justify-center"
+                  style={{ 
+                    opacity: touchStart && touchCurrent && (touchCurrent.y - touchStart.y) > 0 ? getOverlayOpacity() : 0 
+                  }}
+                >
+                  <div className="bg-gray-500/90 text-white px-8 py-4 rounded-lg text-2xl font-bold flex items-center gap-3">
+                    <ChevronDown className="w-8 h-8" />
+                    <span>Hide Forever</span>
                   </div>
                 </div>
 
