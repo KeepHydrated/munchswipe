@@ -14,6 +14,7 @@ export const Header = () => {
   const copyShareLink = () => {
     const link = generateShareLink();
     navigator.clipboard.writeText(link);
+    setShowShareDialog(false);
     toast({
       title: "Link Copied!",
       description: "Share this link with someone to match restaurants",
