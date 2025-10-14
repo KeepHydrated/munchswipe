@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { MapPin, Star, Navigation, Shuffle, Image as ImageIcon, Clock, ChevronDown, Heart, X, Share2, Sparkles } from 'lucide-react';
+import { MapPin, Star, Navigation, Shuffle, Image as ImageIcon, Clock, ChevronDown, Heart, X, Share2, Sparkles, UtensilsCrossed } from 'lucide-react';
 import { useRestaurants } from '@/contexts/RestaurantContext';
 import { useSession } from '@/hooks/useSession';
 import { useMatches } from '@/hooks/useMatches';
@@ -457,8 +457,15 @@ const RandomPick = () => {
       {/* Header */}
       <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border shadow-card">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-end gap-2">
-            {partnerSessionId && matches.length > 0 && (
+          <div className="flex items-center justify-between">
+            <div className="flex-1"></div>
+            <div className="flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg">
+                <UtensilsCrossed className="w-6 h-6 text-primary-foreground" />
+              </div>
+            </div>
+            <div className="flex-1 flex items-center justify-end gap-2">
+              {partnerSessionId && matches.length > 0 && (
               <Dialog open={showMatchesDialog} onOpenChange={setShowMatchesDialog}>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2">
@@ -484,8 +491,8 @@ const RandomPick = () => {
                   </div>
                 </DialogContent>
               </Dialog>
-            )}
-            <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+              )}
+              <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
                   <Share2 className="w-4 h-4" />
@@ -512,7 +519,8 @@ const RandomPick = () => {
                   </div>
                 </div>
               </DialogContent>
-            </Dialog>
+              </Dialog>
+            </div>
           </div>
         </div>
       </div>
