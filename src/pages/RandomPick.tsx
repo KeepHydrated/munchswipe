@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Star, Navigation, Shuffle, ArrowLeft, Image as ImageIcon, Clock } from 'lucide-react';
+import { MapPin, Star, Navigation, Shuffle, ArrowLeft, Image as ImageIcon, Clock, ChevronDown } from 'lucide-react';
 import { useRestaurants } from '@/contexts/RestaurantContext';
 import { Link } from 'react-router-dom';
 
@@ -10,6 +10,7 @@ const RandomPick = () => {
   const { restaurants } = useRestaurants();
   const [selectedRestaurant, setSelectedRestaurant] = useState<typeof restaurants[0] | null>(null);
   const [recentlyShown, setRecentlyShown] = useState<string[]>([]);
+  const [showHours, setShowHours] = useState(false);
 
   // Helper function to check if restaurant is open now or will be open in next hour
   const isOpenOrOpeningSoon = (restaurant: typeof restaurants[0]) => {
@@ -269,19 +270,27 @@ const RandomPick = () => {
 
                       return (
                         <div className="space-y-2">
-                          <div className="flex items-center space-x-2 mb-3">
+                          <button 
+                            onClick={() => setShowHours(!showHours)}
+                            className="flex items-center space-x-2 w-full hover:opacity-80 transition-opacity"
+                          >
                             <Clock className="w-5 h-5 text-muted-foreground" />
                             <h3 className={`font-semibold ${isOpen ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
                               Currently {isOpen ? 'Open' : 'Closed'}
                             </h3>
-                          </div>
-                          <div className="space-y-1 text-sm">
-                            {groupedHours.map((group, index) => (
-                              <p key={index} className="text-muted-foreground">
-                                {group.days}: {group.hours}
-                              </p>
-                            ))}
-                          </div>
+                            <ChevronDown 
+                              className={`w-4 h-4 text-muted-foreground transition-transform ${showHours ? 'rotate-180' : ''}`} 
+                            />
+                          </button>
+                          {showHours && (
+                            <div className="space-y-1 text-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                              {groupedHours.map((group, index) => (
+                                <p key={index} className="text-muted-foreground pl-7">
+                                  {group.days}: {group.hours}
+                                </p>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       );
                     })()}
