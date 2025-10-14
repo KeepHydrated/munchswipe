@@ -297,10 +297,16 @@ const RandomPick = () => {
       r => !recentlyShown.includes(r.id)
     );
     
-    // If all restaurants have been shown, reset the history but keep current one
-    const poolToChooseFrom = availableRestaurants.length > 0 
+    // If all restaurants have been shown, reset the history completely
+    let poolToChooseFrom = availableRestaurants.length > 0 
       ? availableRestaurants 
-      : openOrOpeningSoon.filter(r => r.id !== selectedRestaurant?.id);
+      : openOrOpeningSoon;
+    
+    // Safety check - if pool is still empty somehow, reset everything
+    if (poolToChooseFrom.length === 0) {
+      setRecentlyShown([]);
+      poolToChooseFrom = openOrOpeningSoon;
+    }
     
     // Pick a random restaurant from the available pool
     const randomIndex = Math.floor(Math.random() * poolToChooseFrom.length);
