@@ -110,6 +110,15 @@ const RandomPick = () => {
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!touchStart) return;
     const touch = e.touches[0];
+    const deltaX = Math.abs(touch.clientX - touchStart.x);
+    const deltaY = Math.abs(touch.clientY - touchStart.y);
+    
+    // Only prevent default if horizontal swipe is more significant than vertical
+    // This allows vertical scrolling while capturing horizontal swipes
+    if (deltaX > deltaY && deltaX > 10) {
+      e.preventDefault();
+    }
+    
     setTouchCurrent({ x: touch.clientX, y: touch.clientY });
   };
 
@@ -305,7 +314,7 @@ const RandomPick = () => {
           <div className="space-y-8">
             {selectedRestaurant && (
               <div 
-                className="relative touch-none"
+                className="relative"
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
