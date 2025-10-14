@@ -9,14 +9,17 @@ import { useSession } from '@/hooks/useSession';
 import { useMatches } from '@/hooks/useMatches';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { loadGoogleMaps } from '@/lib/googleMapsLoader';
 
 const RandomPick = () => {
-  const { restaurants } = useRestaurants();
+  const { restaurants, setRestaurants, userLocation, setUserLocation } = useRestaurants();
   const [selectedRestaurant, setSelectedRestaurant] = useState<typeof restaurants[0] | null>(null);
   const [recentlyShown, setRecentlyShown] = useState<string[]>([]);
   const [showHours, setShowHours] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showMatchesDialog, setShowMatchesDialog] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [googleMapsApiKey] = useState('AIzaSyASk-OpxAIgawBXmdyFi-C7QMMPFDq7jlU');
   
   // Session and matching
   const { sessionId, partnerSessionId, generateShareLink } = useSession();
@@ -26,6 +29,220 @@ const RandomPick = () => {
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const [touchCurrent, setTouchCurrent] = useState<{ x: number; y: number } | null>(null);
   const [isSwiping, setIsSwiping] = useState(false);
+
+  // Location and restaurant fetching
+  const getCurrentLocation = async () => {
+    setLoading(true);
+    
+    try {
+      const response = await fetch('https://ipapi.co/json/');
+      const data = await response.json();
+      
+      if (data.latitude && data.longitude) {
+        const location = {
+          latitude: data.latitude,
+          longitude: data.longitude,
+        };
+        setUserLocation(location);
+        setLoading(false);
+        return;
+      }
+    } catch (ipError) {
+      console.error('IP geolocation failed:', ipError);
+      setLoading(false);
+      toast({
+        title: "Location Error",
+        description: "Unable to detect your location. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchRestaurants = async () => {
+    if (!userLocation) {
+      console.log('No user location available');
+      return;
+    }
+
+    if (typeof google === 'undefined' || !google.maps || !google.maps.geometry) {
+      console.log('Google Maps not loaded yet');
+      return;
+    }
+
+    console.log('Starting restaurant search at:', userLocation);
+    setLoading(true);
+    
+    try {
+      const location = new google.maps.LatLng(userLocation.latitude, userLocation.longitude);
+      const map = new google.maps.Map(document.createElement('div'));
+      
+      const service = new google.maps.places.PlacesService(map);
+      const request = {
+        location: location,
+        radius: 8047,
+        type: 'restaurant',
+        openNow: true
+      };
+
+      let allResults: google.maps.places.PlaceResult[] = [];
+      
+      const processResults = async (results: google.maps.places.PlaceResult[] | null, status: google.maps.places.PlacesServiceStatus, pagination: google.maps.places.PlaceSearchPagination | null) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+          allResults = [...allResults, ...results];
+          
+          if (pagination?.hasNextPage && allResults.length < 60) {
+            setTimeout(() => {
+              pagination.nextPage();
+            }, 2000);
+          } else {
+            const detailedRestaurants: any[] = [];
+            
+            for (const place of allResults) {
+              if (!place.place_id) continue;
+              
+              await new Promise<void>((resolve) => {
+                service.getDetails(
+                  {
+                    placeId: place.place_id!,
+                    fields: ['name', 'types', 'rating', 'opening_hours', 'photos', 'vicinity', 'geometry', 'editorial_summary']
+                  },
+                  (detailResult, detailStatus) => {
+                    if (detailStatus === google.maps.places.PlacesServiceStatus.OK && detailResult) {
+                      const distance = detailResult.geometry?.location 
+                        ? google.maps.geometry.spherical.computeDistanceBetween(
+                            location,
+                            detailResult.geometry.location
+                          ) * 0.000621371
+                        : 0;
+
+                      let photoUrl: string | undefined;
+                      if (detailResult.photos && detailResult.photos.length > 0) {
+                        try {
+                          photoUrl = detailResult.photos[0].getUrl({ maxWidth: 800, maxHeight: 600 });
+                        } catch (error) {
+                          console.error(`Error getting photo for ${detailResult.name}:`, error);
+                        }
+                      }
+
+                      const openNow = detailResult.opening_hours?.open_now;
+                      const openingHours = detailResult.opening_hours?.weekday_text;
+
+                      const cuisineMap: Record<string, string> = {
+                        'american_restaurant': 'American',
+                        'bakery': 'Bakery',
+                        'bar': 'Bar',
+                        'barbecue_restaurant': 'Barbecue',
+                        'brazilian_restaurant': 'Brazilian',
+                        'breakfast_restaurant': 'Breakfast',
+                        'brunch_restaurant': 'Brunch',
+                        'cafe': 'Cafe',
+                        'chinese_restaurant': 'Chinese',
+                        'coffee_shop': 'Coffee Shop',
+                        'fast_food_restaurant': 'Fast Food',
+                        'french_restaurant': 'French',
+                        'greek_restaurant': 'Greek',
+                        'hamburger_restaurant': 'Burger',
+                        'ice_cream_shop': 'Ice Cream',
+                        'indian_restaurant': 'Indian',
+                        'indonesian_restaurant': 'Indonesian',
+                        'italian_restaurant': 'Italian',
+                        'japanese_restaurant': 'Japanese',
+                        'korean_restaurant': 'Korean',
+                        'lebanese_restaurant': 'Lebanese',
+                        'mediterranean_restaurant': 'Mediterranean',
+                        'mexican_restaurant': 'Mexican',
+                        'middle_eastern_restaurant': 'Middle Eastern',
+                        'pizza_restaurant': 'Pizza',
+                        'ramen_restaurant': 'Ramen',
+                        'sandwich_shop': 'Sandwiches',
+                        'seafood_restaurant': 'Seafood',
+                        'spanish_restaurant': 'Spanish',
+                        'steak_house': 'Steakhouse',
+                        'sushi_restaurant': 'Sushi',
+                        'thai_restaurant': 'Thai',
+                        'turkish_restaurant': 'Turkish',
+                        'vegan_restaurant': 'Vegan',
+                        'vegetarian_restaurant': 'Vegetarian',
+                        'vietnamese_restaurant': 'Vietnamese'
+                      };
+
+                      let cuisine: string | undefined;
+                      if (detailResult.types) {
+                        for (const type of detailResult.types) {
+                          if (cuisineMap[type]) {
+                            cuisine = cuisineMap[type];
+                            break;
+                          }
+                        }
+                      }
+
+                      detailedRestaurants.push({
+                        id: detailResult.place_id || place.place_id || '',
+                        name: detailResult.name || 'Unknown Restaurant',
+                        address: detailResult.vicinity || place.vicinity || '',
+                        distance: parseFloat(distance.toFixed(1)),
+                        rating: detailResult.rating,
+                        cuisine: cuisine,
+                        phone: undefined,
+                        website: undefined,
+                        latitude: detailResult.geometry?.location?.lat() || userLocation.latitude,
+                        longitude: detailResult.geometry?.location?.lng() || userLocation.longitude,
+                        photoUrl,
+                        openNow,
+                        openingHours,
+                        description: (detailResult as any).editorial_summary?.overview,
+                      });
+                    }
+                    resolve();
+                  }
+                );
+              });
+              
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            const sortedRestaurants = detailedRestaurants.sort((a, b) => a.distance - b.distance);
+            setRestaurants(sortedRestaurants);
+            setLoading(false);
+          }
+        } else {
+          console.error('Places API error status:', status);
+          setLoading(false);
+          toast({
+            title: "Search Error",
+            description: `Could not find restaurants. Please try again.`,
+            variant: "destructive",
+          });
+        }
+      };
+
+      service.nearbySearch(request, processResults);
+    } catch (error) {
+      console.error('Error in fetchRestaurants:', error);
+      setLoading(false);
+      toast({
+        title: "Error",
+        description: "Failed to fetch restaurants. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Initialize Google Maps and get location on mount
+  useEffect(() => {
+    if (!userLocation) {
+      loadGoogleMaps(googleMapsApiKey).then(() => {
+        getCurrentLocation();
+      });
+    }
+  }, []);
+
+  // Fetch restaurants when location is available
+  useEffect(() => {
+    if (userLocation && restaurants.length === 0) {
+      fetchRestaurants();
+    }
+  }, [userLocation]);
 
   // Helper function to check if restaurant is open now or will be open in next hour
   const isOpenOrOpeningSoon = (restaurant: typeof restaurants[0]) => {
