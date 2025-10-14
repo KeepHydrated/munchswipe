@@ -494,11 +494,14 @@ const RandomPick = () => {
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex-1"></div>
-            <div className="flex items-center justify-center">
+            <button 
+              onClick={() => navigate('/random')}
+              className="flex items-center justify-center transition-transform hover:scale-105"
+            >
               <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg">
                 <UtensilsCrossed className="w-6 h-6 text-primary-foreground" />
               </div>
-            </div>
+            </button>
             <div className="flex-1 flex items-center justify-end gap-2">
               <Button
                 variant="outline"
