@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, MapPin, Star, Navigation, ArrowLeft } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Heart, MapPin, Star, Navigation, Share2, Sparkles, UtensilsCrossed, Home } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
+import { useMatches } from '@/hooks/useMatches';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { toast } from '@/hooks/use-toast';
 
 interface LikedRestaurant {
   id: string;
@@ -27,7 +30,10 @@ interface LikedRestaurant {
 const Likes = () => {
   const [likedRestaurants, setLikedRestaurants] = useState<LikedRestaurant[]>([]);
   const [loading, setLoading] = useState(true);
-  const { sessionId } = useSession();
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showMatchesDialog, setShowMatchesDialog] = useState(false);
+  const { sessionId, partnerSessionId, generateShareLink } = useSession();
+  const { matches, matchedRestaurantIds } = useMatches(sessionId, partnerSessionId);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -60,26 +66,93 @@ const Likes = () => {
     window.open(url, '_blank');
   };
 
+  const copyShareLink = () => {
+    const link = generateShareLink();
+    navigator.clipboard.writeText(link);
+    toast({
+      title: "Link Copied!",
+      description: "Share this link with someone to match restaurants",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border shadow-card">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/random')}
-              className="gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Heart className="h-6 w-6 text-red-500 fill-red-500" />
-              My Likes
-            </h1>
-            <div className="w-20" /> {/* Spacer for alignment */}
+            <div className="flex-1"></div>
+            <div className="flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg">
+                <UtensilsCrossed className="w-6 h-6 text-primary-foreground" />
+              </div>
+            </div>
+            <div className="flex-1 flex items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/random')}
+                className="gap-2"
+              >
+                <Home className="h-4 w-4" />
+                Home
+              </Button>
+              {partnerSessionId && matches.length > 0 && (
+              <Dialog open={showMatchesDialog} onOpenChange={setShowMatchesDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    {matches.length} Match{matches.length !== 1 && 'es'}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Your Matches</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {matches.map((match) => (
+                      <Card key={match.id}>
+                        <CardContent className="p-4">
+                          <h3 className="font-semibold">{match.restaurant_name}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            You both liked this restaurant!
+                          </p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </DialogContent>
+              </Dialog>
+              )}
+              <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Share2 className="w-4 h-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Share Your Link</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Share this link with someone. When they like the same restaurants as you, you'll both see matches!
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={generateShareLink()}
+                      className="flex-1 px-3 py-2 border rounded-md bg-muted text-sm"
+                    />
+                    <Button onClick={copyShareLink}>
+                      Copy
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </div>
       </div>
