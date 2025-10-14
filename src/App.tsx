@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { RestaurantProvider } from "@/contexts/RestaurantContext";
+import RestaurantFinder from "./components/RestaurantFinder";
 import RandomPick from "./pages/RandomPick";
 import NotFound from "./pages/NotFound";
 
@@ -17,7 +18,8 @@ const App = () => (
       <RestaurantProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<RandomPick />} />
+            <Route path="/" element={<RestaurantFinder />} />
+            <Route path="/random" element={<RandomPick />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
