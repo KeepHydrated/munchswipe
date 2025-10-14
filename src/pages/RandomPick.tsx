@@ -24,6 +24,9 @@ const RandomPick = () => {
     const stored = localStorage.getItem('hiddenRestaurants');
     return stored ? new Set(JSON.parse(stored)) : new Set();
   });
+  const [showInstructions, setShowInstructions] = useState(() => {
+    return !localStorage.getItem('hasSeenInstructions');
+  });
   
   // Session and matching
   const { sessionId, partnerSessionId } = useSession();
@@ -279,6 +282,11 @@ const RandomPick = () => {
     }
   }, [userLocation, restaurants.length]);
 
+  const dismissInstructions = () => {
+    setShowInstructions(false);
+    localStorage.setItem('hasSeenInstructions', 'true');
+  };
+
   // Helper function to check if restaurant is open now or will be open in next hour
   const isOpenOrOpeningSoon = (restaurant: typeof restaurants[0]) => {
     if (!restaurant.openingHours || restaurant.openingHours.length === 0) return false;
@@ -514,6 +522,57 @@ const RandomPick = () => {
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Header />
+
+      {/* Instructions Overlay */}
+      {showInstructions && selectedRestaurant && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-fade-in"
+          onClick={dismissInstructions}
+        >
+          <div className="bg-background rounded-2xl p-8 max-w-md w-full shadow-2xl animate-scale-in">
+            <h2 className="text-2xl font-bold text-center mb-6">How to Use</h2>
+            
+            <div className="space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                  <Heart className="w-6 h-6 text-green-500" fill="currentColor" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg mb-1">Swipe Right</h3>
+                  <p className="text-muted-foreground text-sm">Like this restaurant and save it to your list</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                  <X className="w-6 h-6 text-red-500" strokeWidth={3} />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg mb-1">Swipe Left</h3>
+                  <p className="text-muted-foreground text-sm">Pass on this restaurant for now</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-gray-500/20 flex items-center justify-center flex-shrink-0">
+                  <ChevronDown className="w-6 h-6 text-gray-500" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg mb-1">Swipe Down</h3>
+                  <p className="text-muted-foreground text-sm">Hide this restaurant forever - it will never show again</p>
+                </div>
+              </div>
+            </div>
+
+            <Button 
+              onClick={dismissInstructions}
+              className="w-full mt-8 bg-gradient-primary"
+            >
+              Got It!
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-6">
