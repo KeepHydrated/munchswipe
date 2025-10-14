@@ -277,16 +277,27 @@ const RestaurantFinder = () => {
   }, [userLocation, toast, setRestaurants]);
 
   useEffect(() => {
+    console.log('Loading Google Maps...');
     loadGoogleMaps(googleMapsApiKey).then(() => {
+      console.log('Google Maps loaded, getting location...');
       getCurrentLocation();
+    }).catch(error => {
+      console.error('Failed to load Google Maps:', error);
+      toast({
+        title: "Loading Error",
+        description: "Failed to load Google Maps. Please refresh the page.",
+        variant: "destructive",
+      });
     });
-  }, [googleMapsApiKey, getCurrentLocation]);
+  }, [googleMapsApiKey]);
 
   useEffect(() => {
-    if (userLocation) {
+    console.log('User location changed:', userLocation);
+    if (userLocation && typeof google !== 'undefined' && google.maps) {
+      console.log('Fetching restaurants...');
       fetchRestaurants();
     }
-  }, [userLocation, fetchRestaurants]);
+  }, [userLocation]);
 
   return (
     <div className="min-h-screen bg-background">
