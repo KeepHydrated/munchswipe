@@ -330,13 +330,18 @@ const RandomPick = () => {
     const deltaX = Math.abs(touch.clientX - touchStart.x);
     const deltaY = Math.abs(touch.clientY - touchStart.y);
     
-    // Only prevent default if horizontal swipe is more significant than vertical
-    // This allows vertical scrolling while capturing horizontal swipes
-    if (deltaX > deltaY && deltaX > 10) {
+    // Determine if this is a horizontal swipe or vertical scroll
+    // Only engage swipe mode if horizontal movement is clearly dominant
+    if (deltaX > 20 && deltaX > deltaY * 1.5) {
+      // This is a horizontal swipe
       e.preventDefault();
+      setTouchCurrent({ x: touch.clientX, y: touch.clientY });
+    } else if (deltaY > 20) {
+      // This is vertical scrolling - cancel swipe
+      setIsSwiping(false);
+      setTouchStart(null);
+      setTouchCurrent(null);
     }
-    
-    setTouchCurrent({ x: touch.clientX, y: touch.clientY });
   };
 
   const handleSwipe = async (liked: boolean) => {
@@ -408,10 +413,21 @@ const RandomPick = () => {
     
     const deltaX = touchCurrent.x - touchStart.x;
     const deltaY = touchCurrent.y - touchStart.y;
+    const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
+    
+    // Only apply transform if this is clearly a horizontal swipe
+    if (absDeltaX < 20 || absDeltaX <= absDeltaY * 1.5) {
+      return {
+        transform: 'translate(0px, 0px) rotate(0deg)',
+        transition: 'transform 0.3s ease-out',
+      };
+    }
+    
     const rotation = deltaX / 20; // Subtle rotation based on swipe
 
     return {
-      transform: `translate(${deltaX}px, ${deltaY}px) rotate(${rotation}deg)`,
+      transform: `translate(${deltaX}px, 0px) rotate(${rotation}deg)`,
       transition: 'none',
     };
   };
@@ -420,7 +436,13 @@ const RandomPick = () => {
   const getOverlayOpacity = () => {
     if (!touchStart || !touchCurrent || !isSwiping) return 0;
     const deltaX = touchCurrent.x - touchStart.x;
-    return Math.min(Math.abs(deltaX) / 150, 1);
+    const deltaY = Math.abs(touchCurrent.y - touchStart.y);
+    const absDeltaX = Math.abs(deltaX);
+    
+    // Only show overlay for clear horizontal swipes
+    if (absDeltaX < 20 || absDeltaX <= deltaY * 1.5) return 0;
+    
+    return Math.min(absDeltaX / 150, 1);
   };
 
   // Automatically pick a random restaurant when restaurants are available
