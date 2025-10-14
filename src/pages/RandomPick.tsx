@@ -366,11 +366,17 @@ const RandomPick = () => {
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!touchStart) return;
     
-    // Always prevent default to stop page scrolling/bouncing
-    e.preventDefault();
-    
     const touch = e.touches[0];
     setTouchCurrent({ x: touch.clientX, y: touch.clientY });
+    
+    const deltaX = Math.abs(touch.clientX - touchStart.x);
+    const deltaY = Math.abs(touch.clientY - touchStart.y);
+    
+    // Only prevent default if horizontal swipe is clearly dominant
+    // This allows vertical scrolling while preventing page bounce during swipes
+    if (deltaX > deltaY && deltaX > 20) {
+      e.preventDefault();
+    }
   };
 
   const handleSwipe = async (liked: boolean) => {
@@ -593,12 +599,7 @@ const RandomPick = () => {
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
-                style={{
-                  ...getSwipeTransform(),
-                  touchAction: 'none',
-                  WebkitUserSelect: 'none',
-                  userSelect: 'none'
-                }}
+                style={getSwipeTransform()}
               >
                 {/* Swipe overlays */}
                 <div 
