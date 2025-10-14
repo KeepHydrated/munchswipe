@@ -507,10 +507,8 @@ const RandomPick = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => navigate('/likes')}
-                className="gap-2"
               >
                 <Heart className="h-4 w-4" />
-                Likes
               </Button>
               {partnerSessionId && matches.length > 0 && (
               <Dialog open={showMatchesDialog} onOpenChange={setShowMatchesDialog}>
