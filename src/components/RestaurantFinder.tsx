@@ -59,7 +59,31 @@ const RestaurantFinder = () => {
           description: "Successfully got your current location!",
         });
       },
-      (error) => {
+      async (error) => {
+        // If GPS fails, try IP-based location as fallback
+        if (error.code === error.PERMISSION_DENIED) {
+          try {
+            const response = await fetch('https://ipapi.co/json/');
+            const data = await response.json();
+            
+            if (data.latitude && data.longitude) {
+              const location = {
+                latitude: data.latitude,
+                longitude: data.longitude,
+              };
+              setUserLocation(location);
+              setLoading(false);
+              toast({
+                title: "Location Found (IP-based)",
+                description: `Using approximate location: ${data.city}, ${data.region}`,
+              });
+              return;
+            }
+          } catch (ipError) {
+            console.error('IP geolocation failed:', ipError);
+          }
+        }
+        
         setLoading(false);
         let errorMessage = "Unable to get your location";
         let instructions = "";
