@@ -430,6 +430,15 @@ const RandomPick = () => {
       setHiddenRestaurants(newHidden);
       localStorage.setItem('hiddenRestaurants', JSON.stringify([...newHidden]));
       
+      // Save restaurant data
+      const existingData = localStorage.getItem('restaurantData');
+      const restaurantData = existingData ? JSON.parse(existingData) : [];
+      const exists = restaurantData.some((r: any) => r.id === selectedRestaurant.id);
+      if (!exists) {
+        restaurantData.push(selectedRestaurant);
+        localStorage.setItem('restaurantData', JSON.stringify(restaurantData));
+      }
+      
       toast({
         title: "Hidden Forever",
         description: `${selectedRestaurant.name} won't be suggested again`,
@@ -807,6 +816,15 @@ const RandomPick = () => {
                         newHidden.add(selectedRestaurant.id);
                         setHiddenRestaurants(newHidden);
                         localStorage.setItem('hiddenRestaurants', JSON.stringify([...newHidden]));
+                        
+                        // Save restaurant data
+                        const existingData = localStorage.getItem('restaurantData');
+                        const restaurantData = existingData ? JSON.parse(existingData) : [];
+                        const exists = restaurantData.some((r: any) => r.id === selectedRestaurant.id);
+                        if (!exists) {
+                          restaurantData.push(selectedRestaurant);
+                          localStorage.setItem('restaurantData', JSON.stringify(restaurantData));
+                        }
                         
                         toast({
                           title: "Hidden Forever",
