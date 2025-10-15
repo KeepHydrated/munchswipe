@@ -97,7 +97,8 @@ const Likes = () => {
                 className="gap-2"
               >
                 <EyeOff className="h-4 w-4" />
-                Hidden
+                <span className="md:hidden">Hidden</span>
+                <span className="hidden md:inline">View Hidden Restaurants</span>
               </Button>
             </div>
             {likedRestaurants.map((item) => {
