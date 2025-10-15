@@ -130,8 +130,31 @@ export default function Matches() {
             </div>
           </Card>
         ) : (
-          <div className="space-y-3">
-            {matches.map((match) => {
+          <>
+            <Card className="p-6 mb-6">
+              <h2 className="font-semibold mb-2">Share with someone new</h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                Copy this link to start matching with a new person. Note: This will start fresh matching.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={generateShareLink()}
+                  readOnly
+                  className="flex-1 px-3 py-2 bg-muted rounded-md text-sm"
+                />
+                <Button onClick={copyShareLink} size="sm">
+                  {copied ? (
+                    <Check className="w-4 h-4" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+            </Card>
+            
+            <div className="space-y-3">
+              {matches.map((match) => {
               const restaurant = match.restaurant_data;
               return (
                 <Card key={match.id} className="p-4">
@@ -175,7 +198,8 @@ export default function Matches() {
                 </Card>
               );
             })}
-          </div>
+            </div>
+          </>
         )}
       </div>
     </div>
