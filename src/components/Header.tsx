@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Heart, UtensilsCrossed, Sparkles, BarChart3 } from 'lucide-react';
+import { Heart, UtensilsCrossed, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const Header = () => {
@@ -24,22 +24,13 @@ export const Header = () => {
               <UtensilsCrossed className="w-6 h-6 text-primary-foreground" />
             </div>
           </button>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/matches')}
-            >
-              <Sparkles className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/analytics')}
-            >
-              <BarChart3 className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/matches')}
+          >
+            <Sparkles className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </div>
