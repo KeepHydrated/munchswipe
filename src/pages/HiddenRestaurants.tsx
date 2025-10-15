@@ -57,10 +57,29 @@ export default function HiddenRestaurants() {
     <div className="min-h-screen bg-background">
       <Header />
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-2">Hidden Restaurants</h1>
-        <p className="text-muted-foreground mb-6">
-          These restaurants won't be suggested to you
-        </p>
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Hidden Restaurants</h1>
+            <p className="text-muted-foreground">
+              These restaurants won't be suggested to you
+            </p>
+          </div>
+          {hiddenRestaurants.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                localStorage.setItem('hiddenRestaurants', JSON.stringify([]));
+                setHiddenRestaurants([]);
+                toast({
+                  title: "All Restaurants Unhidden",
+                  description: "All restaurants can be suggested again",
+                });
+              }}
+            >
+              Unhide All
+            </Button>
+          )}
+        </div>
 
         {hiddenRestaurants.length === 0 ? (
           <Card className="p-8 text-center">
