@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Heart, Share2, UtensilsCrossed } from 'lucide-react';
+import { Heart, Share2, UtensilsCrossed, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useSession } from '@/hooks/useSession';
@@ -33,6 +33,13 @@ export const Header = () => {
               onClick={() => navigate('/likes')}
             >
               <Heart className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/hidden')}
+            >
+              <EyeOff className="h-4 w-4" />
             </Button>
           </div>
           <button 
