@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, MapPin, Star, Navigation } from 'lucide-react';
+import { Heart, MapPin, Star, Navigation, EyeOff } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -94,8 +94,9 @@ const Likes = () => {
                 variant="ghost" 
                 size="sm" 
                 onClick={() => navigate('/hidden')}
-                className="md:hidden"
+                className="md:hidden gap-2"
               >
+                <EyeOff className="h-4 w-4" />
                 Hidden
               </Button>
             </div>
