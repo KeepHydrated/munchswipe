@@ -2,7 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Star, Navigation, Shuffle, Image as ImageIcon, Clock, ChevronDown, Heart, X, Sparkles } from 'lucide-react';
+import { MapPin, Star, Navigation, Shuffle, Image as ImageIcon, Clock, ChevronDown, Heart, X, Sparkles, EyeOff } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useRestaurants } from '@/contexts/RestaurantContext';
 import { useSession } from '@/hooks/useSession';
 import { useMatches } from '@/hooks/useMatches';
@@ -809,36 +815,46 @@ const RandomPick = () => {
                   </div>
 
                   <div className="pt-4 hidden md:flex gap-3">
-                    <Button 
-                      onClick={() => {
-                        if (!selectedRestaurant) return;
-                        const newHidden = new Set(hiddenRestaurants);
-                        newHidden.add(selectedRestaurant.id);
-                        setHiddenRestaurants(newHidden);
-                        localStorage.setItem('hiddenRestaurants', JSON.stringify([...newHidden]));
-                        
-                        // Save restaurant data
-                        const existingData = localStorage.getItem('restaurantData');
-                        const restaurantData = existingData ? JSON.parse(existingData) : [];
-                        const exists = restaurantData.some((r: any) => r.id === selectedRestaurant.id);
-                        if (!exists) {
-                          restaurantData.push(selectedRestaurant);
-                          localStorage.setItem('restaurantData', JSON.stringify(restaurantData));
-                        }
-                        
-                        toast({
-                          title: "Hidden Forever",
-                          description: `${selectedRestaurant.name} won't be suggested again`,
-                        });
-                        
-                        navigate('/hidden');
-                      }}
-                      className="transition-smooth"
-                      variant="outline"
-                    >
-                      <ChevronDown className="w-4 h-4 mr-2" />
-                      Don't Show Again
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          onClick={() => {
+                            if (!selectedRestaurant) return;
+                            const newHidden = new Set(hiddenRestaurants);
+                            newHidden.add(selectedRestaurant.id);
+                            setHiddenRestaurants(newHidden);
+                            localStorage.setItem('hiddenRestaurants', JSON.stringify([...newHidden]));
+                            
+                            // Save restaurant data
+                            const existingData = localStorage.getItem('restaurantData');
+                            const restaurantData = existingData ? JSON.parse(existingData) : [];
+                            const exists = restaurantData.some((r: any) => r.id === selectedRestaurant.id);
+                            if (!exists) {
+                              restaurantData.push(selectedRestaurant);
+                              localStorage.setItem('restaurantData', JSON.stringify(restaurantData));
+                            }
+                            
+                            toast({
+                              title: "Hidden Forever",
+                              description: `${selectedRestaurant.name} won't be suggested again`,
+                            });
+                            
+                            getRandomRestaurant();
+                          }}
+                          className="transition-smooth"
+                          variant="outline"
+                        >
+                          <ChevronDown className="w-4 h-4 mr-2" />
+                          Don't Show Again
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="bg-background border z-50">
+                        <DropdownMenuItem onClick={() => navigate('/hidden')} className="cursor-pointer">
+                          <EyeOff className="w-4 h-4 mr-2" />
+                          View Hidden Restaurants
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <Button 
                       onClick={() => {
                         handleSwipe(false);
