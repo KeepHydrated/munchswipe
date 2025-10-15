@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { Card } from '@/components/ui/card';
-import { MapPin, Star, ExternalLink } from 'lucide-react';
+import { MapPin, Star, ExternalLink, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/hooks/useSession';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface Match {
   id: string;
@@ -15,9 +16,11 @@ interface Match {
 }
 
 export default function Matches() {
-  const { sessionId } = useSession();
+  const { sessionId, generateShareLink } = useSession();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     loadMatches();
@@ -69,6 +72,17 @@ export default function Matches() {
     window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
   };
 
+  const copyShareLink = () => {
+    const link = generateShareLink();
+    navigator.clipboard.writeText(link);
+    setCopied(true);
+    toast({
+      title: "Link copied!",
+      description: "Share this link to find matches",
+    });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -91,12 +105,29 @@ export default function Matches() {
 
         {matches.length === 0 ? (
           <Card className="p-8 text-center">
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground mb-6">
               No mutual matches yet. Share your link with someone and start swiping!
             </p>
-            <p className="text-sm text-muted-foreground">
-              When you both like the same restaurant, it will appear here.
-            </p>
+            <div className="max-w-md mx-auto">
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  value={generateShareLink()}
+                  readOnly
+                  className="flex-1 px-3 py-2 bg-muted rounded-md text-sm"
+                />
+                <Button onClick={copyShareLink} size="sm">
+                  {copied ? (
+                    <Check className="w-4 h-4" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                When you both like the same restaurant, it will appear here.
+              </p>
+            </div>
           </Card>
         ) : (
           <div className="space-y-3">
