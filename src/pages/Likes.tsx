@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, MapPin, Star, Navigation } from 'lucide-react';
+import { Heart, MapPin, Star, Navigation, EyeOff } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -86,9 +86,20 @@ const Likes = () => {
           </Card>
         ) : (
           <div className="space-y-4">
-            <p className="text-muted-foreground mb-4">
-              You've liked {likedRestaurants.length} restaurant{likedRestaurants.length !== 1 ? 's' : ''}
-            </p>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-muted-foreground">
+                You've liked {likedRestaurants.length} restaurant{likedRestaurants.length !== 1 ? 's' : ''}
+              </p>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate('/hidden')}
+                className="md:hidden gap-2"
+              >
+                <EyeOff className="h-4 w-4" />
+                Hidden
+              </Button>
+            </div>
             {likedRestaurants.map((item) => {
               const restaurant = item.restaurant_data;
               return (
