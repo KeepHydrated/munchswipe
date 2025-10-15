@@ -94,7 +94,7 @@ const Likes = () => {
                 variant="ghost" 
                 size="sm" 
                 onClick={() => navigate('/hidden')}
-                className="md:hidden gap-2"
+                className="gap-2"
               >
                 <EyeOff className="h-4 w-4" />
                 Hidden
