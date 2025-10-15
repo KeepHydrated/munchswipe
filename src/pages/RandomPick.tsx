@@ -842,6 +842,7 @@ const RandomPick = () => {
                       className="transition-smooth"
                       variant="outline"
                     >
+                      <EyeOff className="w-4 h-4 mr-2" />
                       Don't Show Again
                     </Button>
                     <Button 
