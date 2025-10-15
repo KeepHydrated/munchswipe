@@ -831,7 +831,7 @@ const RandomPick = () => {
                           description: `${selectedRestaurant.name} won't be suggested again`,
                         });
                         
-                        getRandomRestaurant();
+                        navigate('/hidden');
                       }}
                       className="transition-smooth"
                       variant="outline"
