@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Heart, UtensilsCrossed, EyeOff, Sparkles } from 'lucide-react';
+import { Heart, UtensilsCrossed, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const Header = () => {
@@ -23,13 +23,6 @@ export const Header = () => {
               onClick={() => navigate('/matches')}
             >
               <Sparkles className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/hidden')}
-            >
-              <EyeOff className="h-4 w-4" />
             </Button>
           </div>
           <button 
