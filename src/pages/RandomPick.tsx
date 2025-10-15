@@ -816,6 +816,22 @@ const RandomPick = () => {
 
                   <div className="pt-4 hidden md:flex gap-3">
                     <div className="flex">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            className="transition-smooth rounded-r-none border-r px-2"
+                            variant="outline"
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-background border z-50">
+                          <DropdownMenuItem onClick={() => navigate('/hidden')} className="cursor-pointer">
+                            <EyeOff className="w-4 h-4 mr-2" />
+                            View Hidden Restaurants
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       <Button 
                         onClick={() => {
                           if (!selectedRestaurant) return;
@@ -840,27 +856,11 @@ const RandomPick = () => {
                           
                           getRandomRestaurant();
                         }}
-                        className="transition-smooth rounded-r-none border-r-0"
+                        className="transition-smooth rounded-l-none border-l-0"
                         variant="outline"
                       >
                         Don't Show Again
                       </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            className="transition-smooth rounded-l-none border-l px-2"
-                            variant="outline"
-                          >
-                            <ChevronDown className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-background border z-50">
-                          <DropdownMenuItem onClick={() => navigate('/hidden')} className="cursor-pointer">
-                            <EyeOff className="w-4 h-4 mr-2" />
-                            View Hidden Restaurants
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
                     </div>
                     <Button 
                       onClick={() => {
