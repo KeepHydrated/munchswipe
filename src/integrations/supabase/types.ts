@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      page_views: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          page_path: string
+          referrer: string | null
+          session_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          page_path: string
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          page_path?: string
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_views_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurant_matches: {
         Row: {
           created_at: string | null
