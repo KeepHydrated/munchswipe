@@ -430,7 +430,7 @@ const RandomPick = () => {
     const absDeltaY = Math.abs(deltaY);
     
     // Check for downward swipe (hide forever)
-    if (deltaY > 100 && absDeltaY > absDeltaX * 1.5) {
+    if (deltaY > 50 && absDeltaY > absDeltaX) {
       const newHidden = new Set(hiddenRestaurants);
       newHidden.add(selectedRestaurant.id);
       setHiddenRestaurants(newHidden);
