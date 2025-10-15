@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, MapPin, Star, Navigation, Users } from 'lucide-react';
+import { Heart, MapPin, Star, Navigation } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
-import { useMatches } from '@/hooks/useMatches';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
@@ -29,9 +28,7 @@ interface LikedRestaurant {
 const Likes = () => {
   const [likedRestaurants, setLikedRestaurants] = useState<LikedRestaurant[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'likes' | 'matches'>('likes');
-  const { sessionId, partnerSessionId } = useSession();
-  const { matches } = useMatches(sessionId, partnerSessionId);
+  const { sessionId } = useSession();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -64,73 +61,35 @@ const Likes = () => {
     window.open(url, '_blank');
   };
 
-  const displayedRestaurants = activeView === 'likes' 
-    ? likedRestaurants 
-    : likedRestaurants.filter(item => matches.some(match => match.restaurant_id === item.restaurant_id));
-
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Header />
 
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Filter Buttons */}
-        <div className="flex gap-2 mb-6">
-          <Button
-            variant={activeView === 'likes' ? 'default' : 'outline'}
-            onClick={() => setActiveView('likes')}
-            className="gap-2"
-          >
-            <Heart className="h-4 w-4" />
-            Your Likes
-          </Button>
-          <Button
-            variant={activeView === 'matches' ? 'default' : 'outline'}
-            onClick={() => setActiveView('matches')}
-            className="gap-2"
-          >
-            <Users className="h-4 w-4" />
-            Mutual Matches
-          </Button>
-        </div>
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
-        ) : displayedRestaurants.length === 0 ? (
+        ) : likedRestaurants.length === 0 ? (
           <Card className="text-center py-12">
             <CardContent>
-              {activeView === 'likes' ? (
-                <>
-                  <Heart className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                  <h2 className="text-2xl font-semibold mb-2">No Likes Yet</h2>
-                  <p className="text-muted-foreground mb-6">
-                    Start swiping right on restaurants you like to see them here!
-                  </p>
-                  <Button onClick={() => navigate('/random')}>
-                    Start Swiping
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                  <h2 className="text-2xl font-semibold mb-2">No Matches Yet</h2>
-                  <p className="text-muted-foreground mb-6">
-                    When you and your partner both like the same restaurant, it'll appear here!
-                  </p>
-                </>
-              )}
+              <Heart className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+              <h2 className="text-2xl font-semibold mb-2">No Likes Yet</h2>
+              <p className="text-muted-foreground mb-6">
+                Start swiping right on restaurants you like to see them here!
+              </p>
+              <Button onClick={() => navigate('/')}>
+                Start Swiping
+              </Button>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-4">
             <p className="text-muted-foreground mb-4">
-              {activeView === 'likes' 
-                ? `You've liked ${displayedRestaurants.length} restaurant${displayedRestaurants.length !== 1 ? 's' : ''}`
-                : `${displayedRestaurants.length} mutual match${displayedRestaurants.length !== 1 ? 'es' : ''}`
-              }
+              You've liked {likedRestaurants.length} restaurant{likedRestaurants.length !== 1 ? 's' : ''}
             </p>
-            {displayedRestaurants.map((item) => {
+            {likedRestaurants.map((item) => {
               const restaurant = item.restaurant_data;
               return (
                 <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow">
