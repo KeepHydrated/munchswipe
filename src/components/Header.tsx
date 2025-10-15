@@ -43,7 +43,7 @@ export const Header = () => {
             </Button>
           </div>
           <button 
-            onClick={() => navigate('/random')}
+            onClick={() => navigate('/')}
             className="flex items-center justify-center transition-transform hover:scale-105"
           >
             <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg">
