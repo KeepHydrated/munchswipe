@@ -802,6 +802,27 @@ const RandomPick = () => {
                   <div className="pt-4 hidden md:flex gap-3">
                     <Button 
                       onClick={() => {
+                        if (!selectedRestaurant) return;
+                        const newHidden = new Set(hiddenRestaurants);
+                        newHidden.add(selectedRestaurant.id);
+                        setHiddenRestaurants(newHidden);
+                        localStorage.setItem('hiddenRestaurants', JSON.stringify([...newHidden]));
+                        
+                        toast({
+                          title: "Hidden Forever",
+                          description: `${selectedRestaurant.name} won't be suggested again`,
+                        });
+                        
+                        getRandomRestaurant();
+                      }}
+                      className="transition-smooth"
+                      variant="outline"
+                    >
+                      <ChevronDown className="w-4 h-4 mr-2" />
+                      Don't Show Again
+                    </Button>
+                    <Button 
+                      onClick={() => {
                         handleSwipe(false);
                         getRandomRestaurant();
                       }}
