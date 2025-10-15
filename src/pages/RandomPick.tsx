@@ -47,6 +47,30 @@ const RandomPick = () => {
   const getCurrentLocation = async () => {
     setLoading(true);
     
+    // Try native geolocation first (works better on mobile)
+    if (navigator.geolocation) {
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          });
+        });
+        
+        const location = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        };
+        setUserLocation(location);
+        setLoading(false);
+        return;
+      } catch (geoError) {
+        console.log('Native geolocation failed, trying IP fallback:', geoError);
+      }
+    }
+    
+    // Fallback to IP geolocation
     try {
       const response = await fetch('https://ipapi.co/json/');
       const data = await response.json();
@@ -65,7 +89,7 @@ const RandomPick = () => {
       setLoading(false);
       toast({
         title: "Location Error",
-        description: "Unable to detect your location. Please try again.",
+        description: "Unable to detect your location. Please enable location permissions and try again.",
         variant: "destructive",
       });
     }
