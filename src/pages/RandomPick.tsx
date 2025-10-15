@@ -815,53 +815,35 @@ const RandomPick = () => {
                   </div>
 
                   <div className="pt-4 hidden md:flex gap-3">
-                    <div className="flex">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            className="transition-smooth rounded-r-none border-r px-2"
-                            variant="outline"
-                          >
-                            <ChevronDown className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-background border z-50">
-                          <DropdownMenuItem onClick={() => navigate('/hidden')} className="cursor-pointer">
-                            <EyeOff className="w-4 h-4 mr-2" />
-                            View Hidden Restaurants
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <Button 
-                        onClick={() => {
-                          if (!selectedRestaurant) return;
-                          const newHidden = new Set(hiddenRestaurants);
-                          newHidden.add(selectedRestaurant.id);
-                          setHiddenRestaurants(newHidden);
-                          localStorage.setItem('hiddenRestaurants', JSON.stringify([...newHidden]));
-                          
-                          // Save restaurant data
-                          const existingData = localStorage.getItem('restaurantData');
-                          const restaurantData = existingData ? JSON.parse(existingData) : [];
-                          const exists = restaurantData.some((r: any) => r.id === selectedRestaurant.id);
-                          if (!exists) {
-                            restaurantData.push(selectedRestaurant);
-                            localStorage.setItem('restaurantData', JSON.stringify(restaurantData));
-                          }
-                          
-                          toast({
-                            title: "Hidden Forever",
-                            description: `${selectedRestaurant.name} won't be suggested again`,
-                          });
-                          
-                          getRandomRestaurant();
-                        }}
-                        className="transition-smooth rounded-l-none border-l-0"
-                        variant="outline"
-                      >
-                        Don't Show Again
-                      </Button>
-                    </div>
+                    <Button 
+                      onClick={() => {
+                        if (!selectedRestaurant) return;
+                        const newHidden = new Set(hiddenRestaurants);
+                        newHidden.add(selectedRestaurant.id);
+                        setHiddenRestaurants(newHidden);
+                        localStorage.setItem('hiddenRestaurants', JSON.stringify([...newHidden]));
+                        
+                        // Save restaurant data
+                        const existingData = localStorage.getItem('restaurantData');
+                        const restaurantData = existingData ? JSON.parse(existingData) : [];
+                        const exists = restaurantData.some((r: any) => r.id === selectedRestaurant.id);
+                        if (!exists) {
+                          restaurantData.push(selectedRestaurant);
+                          localStorage.setItem('restaurantData', JSON.stringify(restaurantData));
+                        }
+                        
+                        toast({
+                          title: "Hidden Forever",
+                          description: `${selectedRestaurant.name} won't be suggested again`,
+                        });
+                        
+                        getRandomRestaurant();
+                      }}
+                      className="transition-smooth"
+                      variant="outline"
+                    >
+                      Don't Show Again
+                    </Button>
                     <Button 
                       onClick={() => {
                         handleSwipe(false);
