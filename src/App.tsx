@@ -19,7 +19,6 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<RandomPick />} />
-            <Route path="/random" element={<RandomPick />} />
             <Route path="/likes" element={<Likes />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
