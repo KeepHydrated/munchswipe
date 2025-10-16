@@ -117,8 +117,7 @@ const RandomPick = () => {
       const request = {
         location: location,
         radius: 8047,
-        type: 'restaurant',
-        openNow: true
+        type: 'restaurant'
       };
 
       const processPlaceDetails = async (places: google.maps.places.PlaceResult[]) => {
@@ -357,31 +356,30 @@ const RandomPick = () => {
   };
 
   const getRandomRestaurant = () => {
-    // First filter for restaurants that are open now or opening soon AND not hidden
+    // First try to get open/opening soon restaurants
     const openOrOpeningSoon = restaurants.filter(r => 
       isOpenOrOpeningSoon(r) && !hiddenRestaurants.has(r.id)
     );
     
-    if (openOrOpeningSoon.length === 0) {
+    // If no open restaurants, fall back to all non-hidden restaurants
+    const availablePool = openOrOpeningSoon.length > 0 
+      ? openOrOpeningSoon 
+      : restaurants.filter(r => !hiddenRestaurants.has(r.id));
+    
+    if (availablePool.length === 0) {
       setSelectedRestaurant(null);
       return;
     }
     
     // Get restaurants that haven't been shown recently
-    const availableRestaurants = openOrOpeningSoon.filter(
+    const notRecentlyShown = availablePool.filter(
       r => !recentlyShown.includes(r.id)
     );
     
-    // If all restaurants have been shown, reset the history completely
-    let poolToChooseFrom = availableRestaurants.length > 0 
-      ? availableRestaurants 
-      : openOrOpeningSoon;
-    
-    // Safety check - if pool is still empty somehow, reset everything
-    if (poolToChooseFrom.length === 0) {
-      setRecentlyShown([]);
-      poolToChooseFrom = openOrOpeningSoon;
-    }
+    // Choose from not recently shown, or all if everything was recently shown
+    let poolToChooseFrom = notRecentlyShown.length > 0 
+      ? notRecentlyShown 
+      : availablePool;
     
     // Pick a random restaurant from the available pool
     const randomIndex = Math.floor(Math.random() * poolToChooseFrom.length);
@@ -390,7 +388,7 @@ const RandomPick = () => {
     setSelectedRestaurant(newRestaurant);
     
     // Update recently shown list (keep last 5 or half of total restaurants, whichever is smaller)
-    const maxHistory = Math.min(5, Math.floor(openOrOpeningSoon.length / 2));
+    const maxHistory = Math.min(5, Math.floor(availablePool.length / 2));
     setRecentlyShown(prev => {
       const updated = [...prev, newRestaurant.id];
       return updated.slice(-maxHistory);
