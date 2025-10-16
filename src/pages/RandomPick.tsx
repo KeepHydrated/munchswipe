@@ -355,6 +355,58 @@ const RandomPick = () => {
     return isCurrentlyOpen || willOpenSoon;
   };
 
+  // Helper function to calculate hours until opening
+  const getHoursUntilOpening = (restaurant: typeof restaurants[0]) => {
+    if (!restaurant.openingHours || restaurant.openingHours.length === 0) return null;
+    
+    const now = new Date();
+    const currentDay = now.getDay();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    
+    // Check each day starting from today
+    for (let i = 0; i < 7; i++) {
+      const dayIndex = (currentDay + i) % 7;
+      const dayHours = restaurant.openingHours[dayIndex];
+      
+      if (!dayHours) continue;
+      
+      // Handle "Open 24 hours"
+      if (dayHours.includes('Open 24 hours')) {
+        return 0;
+      }
+      
+      const timeMatch = dayHours.match(/(\d+):(\d+)\s*(AM|PM)\s*[–-]\s*(\d+):(\d+)\s*(AM|PM)/i);
+      if (!timeMatch) continue;
+      
+      let openHour = parseInt(timeMatch[1]);
+      const openMin = parseInt(timeMatch[2]);
+      const openPeriod = timeMatch[3].toUpperCase();
+      
+      // Convert to 24-hour format
+      if (openPeriod === 'PM' && openHour !== 12) openHour += 12;
+      if (openPeriod === 'AM' && openHour === 12) openHour = 0;
+      
+      const openTime = openHour * 60 + openMin;
+      
+      // If checking today
+      if (i === 0) {
+        if (openTime > currentTime) {
+          const minutesUntil = openTime - currentTime;
+          return Math.round(minutesUntil / 60 * 10) / 10; // Round to 1 decimal
+        }
+      } else {
+        // For future days, calculate total hours
+        const minutesLeftToday = (24 * 60) - currentTime;
+        const minutesInBetweenDays = (i - 1) * 24 * 60;
+        const minutesUntilOpen = openTime;
+        const totalMinutes = minutesLeftToday + minutesInBetweenDays + minutesUntilOpen;
+        return Math.round(totalMinutes / 60 * 10) / 10;
+      }
+    }
+    
+    return null;
+  };
+
   const getRandomRestaurant = () => {
     // First try to get open/opening soon restaurants
     const openOrOpeningSoon = restaurants.filter(r => 
@@ -808,6 +860,8 @@ const RandomPick = () => {
                         groupedHours.push({ days: daysLabel, hours: currentGroup.hours });
                       }
 
+                      const hoursUntilOpen = !isOpen ? getHoursUntilOpening(selectedRestaurant) : null;
+
                       return (
                         <div className="space-y-2">
                           <button 
@@ -815,9 +869,16 @@ const RandomPick = () => {
                             className="flex items-center space-x-2 w-full hover:opacity-80 transition-opacity"
                           >
                             <Clock className="w-5 h-5 text-muted-foreground" />
-                            <h3 className={`font-semibold ${isOpen ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
-                              Currently {isOpen ? 'Open' : 'Closed'}
-                            </h3>
+                            <div className="flex-1 text-left">
+                              <h3 className={`font-semibold ${isOpen ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
+                                Currently {isOpen ? 'Open' : 'Closed'}
+                              </h3>
+                              {!isOpen && hoursUntilOpen !== null && (
+                                <p className="text-sm text-muted-foreground">
+                                  Opens in {hoursUntilOpen < 1 ? `${Math.round(hoursUntilOpen * 60)} minutes` : `${hoursUntilOpen} ${hoursUntilOpen === 1 ? 'hour' : 'hours'}`}
+                                </p>
+                              )}
+                            </div>
                             <ChevronDown 
                               className={`w-4 h-4 text-muted-foreground transition-transform ${showHours ? 'rotate-180' : ''}`} 
                             />
