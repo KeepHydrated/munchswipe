@@ -805,26 +805,31 @@ const RandomPick = () => {
                       const todayHours = selectedRestaurant.openingHours[currentDay];
                       
                       if (todayHours) {
-                        // Extract time range from string like "Monday: 9:00 AM – 10:00 PM"
-                        const timeMatch = todayHours.match(/(\d+):(\d+)\s*(AM|PM)\s*[–-]\s*(\d+):(\d+)\s*(AM|PM)/i);
-                        if (timeMatch) {
-                          let openHour = parseInt(timeMatch[1]);
-                          const openMin = parseInt(timeMatch[2]);
-                          const openPeriod = timeMatch[3].toUpperCase();
-                          let closeHour = parseInt(timeMatch[4]);
-                          const closeMin = parseInt(timeMatch[5]);
-                          const closePeriod = timeMatch[6].toUpperCase();
-                          
-                          // Convert to 24-hour format
-                          if (openPeriod === 'PM' && openHour !== 12) openHour += 12;
-                          if (openPeriod === 'AM' && openHour === 12) openHour = 0;
-                          if (closePeriod === 'PM' && closeHour !== 12) closeHour += 12;
-                          if (closePeriod === 'AM' && closeHour === 12) closeHour = 0;
-                          
-                          const openTime = openHour * 60 + openMin;
-                          const closeTime = closeHour * 60 + closeMin;
-                          
-                          isOpen = currentTime >= openTime && currentTime < closeTime;
+                        // Check if open 24 hours
+                        if (todayHours.includes('Open 24 hours')) {
+                          isOpen = true;
+                        } else {
+                          // Extract time range from string like "Monday: 9:00 AM – 10:00 PM"
+                          const timeMatch = todayHours.match(/(\d+):(\d+)\s*(AM|PM)\s*[–-]\s*(\d+):(\d+)\s*(AM|PM)/i);
+                          if (timeMatch) {
+                            let openHour = parseInt(timeMatch[1]);
+                            const openMin = parseInt(timeMatch[2]);
+                            const openPeriod = timeMatch[3].toUpperCase();
+                            let closeHour = parseInt(timeMatch[4]);
+                            const closeMin = parseInt(timeMatch[5]);
+                            const closePeriod = timeMatch[6].toUpperCase();
+                            
+                            // Convert to 24-hour format
+                            if (openPeriod === 'PM' && openHour !== 12) openHour += 12;
+                            if (openPeriod === 'AM' && openHour === 12) openHour = 0;
+                            if (closePeriod === 'PM' && closeHour !== 12) closeHour += 12;
+                            if (closePeriod === 'AM' && closeHour === 12) closeHour = 0;
+                            
+                            const openTime = openHour * 60 + openMin;
+                            const closeTime = closeHour * 60 + closeMin;
+                            
+                            isOpen = currentTime >= openTime && currentTime < closeTime;
+                          }
                         }
                       }
 
