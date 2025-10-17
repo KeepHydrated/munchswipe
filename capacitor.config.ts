@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.9539e907b7634e628e4cb8b020dda29d',
+  appId: 'com.lovable.munchswipe',
   appName: 'munchswipe',
   webDir: 'dist',
   server: {
