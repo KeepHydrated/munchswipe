@@ -7,6 +7,7 @@ import { useSession } from '@/hooks/useSession';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
+import { AdBanner } from '@/components/AdBanner';
 
 interface LikedRestaurant {
   id: string;
@@ -67,6 +68,9 @@ const Likes = () => {
 
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Ad Banner */}
+        <AdBanner slot="1234567890" format="auto" className="mb-6" />
+        
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
