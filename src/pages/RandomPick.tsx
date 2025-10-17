@@ -17,6 +17,7 @@ import { toast } from '@/hooks/use-toast';
 import { loadGoogleMaps } from '@/lib/googleMapsLoader';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
+import { AdCard } from '@/components/AdCard';
 
 const RandomPick = () => {
   const { restaurants, setRestaurants, userLocation, setUserLocation } = useRestaurants();
@@ -33,6 +34,8 @@ const RandomPick = () => {
   const [showInstructions, setShowInstructions] = useState(() => {
     return !localStorage.getItem('hasSeenInstructions');
   });
+  const [cardsSinceLastAd, setCardsSinceLastAd] = useState(0);
+  const [showingAd, setShowingAd] = useState(false);
   
   // Session and matching
   const { sessionId, partnerSessionId } = useSession();
@@ -408,6 +411,19 @@ const RandomPick = () => {
   };
 
   const getRandomRestaurant = () => {
+    // Check if we should show an ad (every 3-5 cards)
+    const shouldShowAd = cardsSinceLastAd >= 3 + Math.floor(Math.random() * 3);
+    
+    if (shouldShowAd) {
+      setShowingAd(true);
+      setCardsSinceLastAd(0);
+      setSelectedRestaurant(null);
+      return;
+    }
+    
+    setShowingAd(false);
+    setCardsSinceLastAd(prev => prev + 1);
+    
     // First try to get open/opening soon restaurants
     const openOrOpeningSoon = restaurants.filter(r => 
       isOpenOrOpeningSoon(r) && !hiddenRestaurants.has(r.id)
@@ -497,6 +513,12 @@ const RandomPick = () => {
   };
 
   const handleSwipe = async (liked: boolean) => {
+    // If swiping an ad, just move to next card
+    if (showingAd) {
+      getRandomRestaurant();
+      return;
+    }
+    
     if (!selectedRestaurant || !sessionId) return;
 
     // Save swipe to database
@@ -517,7 +539,32 @@ const RandomPick = () => {
   };
 
   const handleTouchEnd = () => {
-    if (!touchStart || !touchCurrent || !selectedRestaurant) {
+    if (!touchStart || !touchCurrent) {
+      setIsSwiping(false);
+      setTouchStart(null);
+      setTouchCurrent(null);
+      return;
+    }
+    
+    // If showing ad, don't allow down swipe (hide), only horizontal swipes
+    if (showingAd) {
+      const deltaX = touchCurrent.x - touchStart.x;
+      const deltaY = touchCurrent.y - touchStart.y;
+      const absDeltaX = Math.abs(deltaX);
+      const absDeltaY = Math.abs(deltaY);
+      
+      // Only allow horizontal swipes for ads
+      if (absDeltaX > 80 && absDeltaX > absDeltaY * 1.2) {
+        getRandomRestaurant();
+      }
+      
+      setIsSwiping(false);
+      setTouchStart(null);
+      setTouchCurrent(null);
+      return;
+    }
+    
+    if (!selectedRestaurant) {
       setIsSwiping(false);
       setTouchStart(null);
       setTouchCurrent(null);
@@ -639,7 +686,7 @@ const RandomPick = () => {
       <Header />
 
       {/* Instructions Overlay */}
-      {showInstructions && selectedRestaurant && (
+      {showInstructions && (selectedRestaurant || showingAd) && (
         <div 
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-fade-in"
           onClick={dismissInstructions}
@@ -701,7 +748,7 @@ const RandomPick = () => {
               </p>
             </CardContent>
           </Card>
-        ) : !selectedRestaurant ? (
+        ) : !selectedRestaurant && !showingAd ? (
           <Card className="shadow-warm">
             <CardContent className="text-center py-12">
               <Clock className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
@@ -713,7 +760,43 @@ const RandomPick = () => {
           </Card>
         ) : (
           <div className="space-y-8">
-            {selectedRestaurant && (
+            {/* Ad Card */}
+            {showingAd && (
+              <div 
+                className="relative"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                style={getSwipeTransform()}
+              >
+                {/* Swipe overlays for ad */}
+                <div 
+                  className="absolute inset-0 z-10 pointer-events-none rounded-lg flex items-center justify-center"
+                  style={{ 
+                    opacity: touchStart && touchCurrent && (touchCurrent.x - touchStart.x) > 0 ? getOverlayOpacity() : 0 
+                  }}
+                >
+                  <div className="bg-primary/90 text-white px-8 py-4 rounded-lg text-2xl font-bold rotate-[-20deg]">
+                    <span>Next →</span>
+                  </div>
+                </div>
+                <div 
+                  className="absolute inset-0 z-10 pointer-events-none rounded-lg flex items-center justify-center"
+                  style={{ 
+                    opacity: touchStart && touchCurrent && (touchCurrent.x - touchStart.x) < 0 ? getOverlayOpacity() : 0 
+                  }}
+                >
+                  <div className="bg-primary/90 text-white px-8 py-4 rounded-lg text-2xl font-bold rotate-[20deg]">
+                    <span>Next →</span>
+                  </div>
+                </div>
+
+                <AdCard className="animate-in fade-in slide-in-from-bottom-4 duration-500" />
+              </div>
+            )}
+            
+            {/* Restaurant Card */}
+            {selectedRestaurant && !showingAd && (
               <div 
                 className="relative"
                 onTouchStart={handleTouchStart}
@@ -993,12 +1076,12 @@ const RandomPick = () => {
                     <Navigation className="w-4 h-4 mr-2" />
                     Get Directions
                   </Button>
-                </CardContent>
-              </Card>
-              </div>
-            )}
-          </div>
-        )}
+                 </CardContent>
+               </Card>
+               </div>
+             )}
+           </div>
+         )}
       </div>
     </div>
   );
