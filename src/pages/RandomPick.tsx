@@ -411,8 +411,8 @@ const RandomPick = () => {
   };
 
   const getRandomRestaurant = () => {
-    // Check if we should show an ad (every 3-5 cards)
-    const shouldShowAd = cardsSinceLastAd >= 3 + Math.floor(Math.random() * 3);
+    // Check if we should show an ad (every 10 cards)
+    const shouldShowAd = cardsSinceLastAd >= 10;
     
     if (shouldShowAd) {
       setShowingAd(true);
