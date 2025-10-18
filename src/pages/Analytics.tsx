@@ -11,6 +11,7 @@ interface PageView {
   page_path: string;
   country: string | null;
   city: string | null;
+  region: string | null;
   created_at: string;
 }
 
@@ -19,6 +20,7 @@ interface Stats {
   uniqueSessions: number;
   topPages: { page: string; views: number }[];
   topCountries: { country: string; views: number }[];
+  topStates: { state: string; views: number }[];
   viewsToday: number;
   viewsLastWeek: number;
   viewsLastMonth: number;
@@ -33,6 +35,7 @@ const Analytics = () => {
     uniqueSessions: 0,
     topPages: [],
     topCountries: [],
+    topStates: [],
     viewsToday: 0,
     viewsLastWeek: 0,
     viewsLastMonth: 0,
@@ -97,11 +100,24 @@ const Analytics = () => {
             .sort((a, b) => b.views - a.views)
             .slice(0, 5);
 
+          // Top US states
+          const stateCount: Record<string, number> = {};
+          pageViews.forEach((pv: PageView) => {
+            if (pv.region && pv.country === 'United States') {
+              stateCount[pv.region] = (stateCount[pv.region] || 0) + 1;
+            }
+          });
+          const topStates = Object.entries(stateCount)
+            .map(([state, views]) => ({ state, views }))
+            .sort((a, b) => b.views - a.views)
+            .slice(0, 10);
+
           setStats({
             totalViews,
             uniqueSessions,
             topPages,
             topCountries,
+            topStates,
             viewsToday,
             viewsLastWeek,
             viewsLastMonth,
@@ -226,7 +242,7 @@ const Analytics = () => {
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Top Pages Chart */}
           <Card>
             <CardHeader>
@@ -284,6 +300,32 @@ const Analytics = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* US States Chart */}
+        {stats.topStates.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Visitors by US State</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={stats.topStates} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis type="number" stroke="hsl(var(--foreground))" />
+                  <YAxis dataKey="state" type="category" stroke="hsl(var(--foreground))" width={100} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                    }}
+                  />
+                  <Bar dataKey="views" fill="hsl(var(--primary))" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
