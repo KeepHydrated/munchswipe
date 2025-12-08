@@ -18,6 +18,8 @@ import { loadGoogleMaps } from '@/lib/googleMapsLoader';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { AdCard } from '@/components/AdCard';
+import { useApiUsageTracker } from '@/hooks/useApiUsageTracker';
+import ApiUsageBanner from '@/components/ApiUsageBanner';
 
 const RandomPick = () => {
   const { restaurants, setRestaurants, userLocation, setUserLocation } = useRestaurants();
@@ -40,6 +42,10 @@ const RandomPick = () => {
   // Session and matching
   const { sessionId, partnerSessionId } = useSession();
   const { matchedRestaurantIds } = useMatches(sessionId, partnerSessionId);
+  
+  // API usage tracking
+  const { trackNearbySearch, trackPlaceDetails } = useApiUsageTracker();
+  const [showUsageBanner, setShowUsageBanner] = useState(true);
   
   // Swipe state
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
@@ -230,6 +236,11 @@ const RandomPick = () => {
           await new Promise(resolve => setTimeout(resolve, 50));
         }
         
+        // Track Place Details API usage
+        if (detailedRestaurants.length > 0) {
+          trackPlaceDetails(detailedRestaurants.length);
+        }
+        
         return detailedRestaurants.sort((a, b) => a.distance - b.distance);
       };
 
@@ -281,6 +292,7 @@ const RandomPick = () => {
       };
 
       service.nearbySearch(request, processResults);
+      trackNearbySearch(); // Track API usage
     } catch (error) {
       console.error('Error in fetchRestaurants:', error);
       setLoading(false);
@@ -684,6 +696,11 @@ const RandomPick = () => {
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Header />
+      
+      {/* API Usage Warning Banner */}
+      {showUsageBanner && (
+        <ApiUsageBanner onDismiss={() => setShowUsageBanner(false)} />
+      )}
 
       {/* Instructions Overlay */}
       {showInstructions && (selectedRestaurant || showingAd) && (
