@@ -28,7 +28,7 @@ const RandomPick = () => {
   const [recentlyShown, setRecentlyShown] = useState<string[]>([]);
   const [showHours, setShowHours] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleMapsApiKey] = useState('AIzaSyASk-OpxAIgawBXmdyFi-C7QMMPFDq7jlU');
+  const [googleMapsApiKey, setGoogleMapsApiKey] = useState<string | null>(null);
   const [hiddenRestaurants, setHiddenRestaurants] = useState<Set<string>>(() => {
     const stored = localStorage.getItem('hiddenRestaurants');
     return stored ? new Set(JSON.parse(stored)) : new Set();
@@ -304,19 +304,35 @@ const RandomPick = () => {
     }
   };
 
-  // Initialize Google Maps, get location, and fetch restaurants on mount
+  // Fetch API key and initialize Google Maps
   useEffect(() => {
-    const initializeRestaurants = async () => {
-      // Load Google Maps API first
-      await loadGoogleMaps(googleMapsApiKey);
-      
-      // Get location if we don't have it
-      if (!userLocation) {
-        await getCurrentLocation();
+    const fetchApiKeyAndInit = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-google-maps-key');
+        
+        if (error || !data?.apiKey) {
+          console.error('Failed to get API key:', error);
+          toast({
+            title: "Configuration Error",
+            description: "Could not load Google Maps. Please try again later.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        setGoogleMapsApiKey(data.apiKey);
+        await loadGoogleMaps(data.apiKey);
+        
+        // Get location if we don't have it
+        if (!userLocation) {
+          await getCurrentLocation();
+        }
+      } catch (err) {
+        console.error('Error initializing:', err);
       }
     };
     
-    initializeRestaurants();
+    fetchApiKeyAndInit();
   }, []);
 
   // Fetch restaurants when location is available and we don't have restaurants
