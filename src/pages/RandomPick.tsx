@@ -473,10 +473,13 @@ const RandomPick = () => {
       // Check if it matches excluded types from Google
       const matchesExcludedType = r.types?.some(type => excludedTypes.has(type as FilterableType)) ?? false;
       
-      // If fast food filter is on, also check against known chain names
+      // If chains filter is on, check against known chain names
+      const isChainsFiltered = excludedTypes.has('chains') && isFastFoodChain(r.name);
+      
+      // If fast food filter is on, also check against known fast food chain names
       const isFastFoodFiltered = excludedTypes.has('fast_food_restaurant') && isFastFoodChain(r.name);
       
-      return matchesExcludedType || isFastFoodFiltered;
+      return matchesExcludedType || isChainsFiltered || isFastFoodFiltered;
     };
     
     // First try to get open/opening soon restaurants (excluding filtered types)
