@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { Header } from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, ChevronRight, RotateCcw } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Sparkles, ChevronRight, RotateCcw, MapPin, Star, Navigation } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useRestaurants } from '@/contexts/RestaurantContext';
 
 interface QuizAnswer {
   mood: string;
@@ -15,8 +17,10 @@ interface QuizAnswer {
 }
 
 interface Recommendation {
-  cuisine: string;
-  reason: string;
+  restaurantName?: string;
+  restaurantIndex?: number;
+  cuisine?: string;
+  matchReason: string;
   emoji: string;
 }
 
@@ -74,10 +78,12 @@ const QUIZ_QUESTIONS = [
 ];
 
 const Find = () => {
+  const { restaurants } = useRestaurants();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Partial<QuizAnswer>>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [recommendations, setRecommendations] = useState<Recommendation[] | null>(null);
+  const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
+  const [matchedRestaurant, setMatchedRestaurant] = useState<typeof restaurants[0] | null>(null);
 
   const handleAnswer = (questionId: string, value: string) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
@@ -90,14 +96,33 @@ const Find = () => {
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
+      // Send restaurants data to get a specific recommendation
+      const restaurantData = restaurants.map(r => ({
+        name: r.name,
+        cuisine: r.cuisine,
+        rating: r.rating,
+        distance: r.distance,
+        description: r.description,
+      }));
+
       const { data, error } = await supabase.functions.invoke('restaurant-quiz', {
-        body: { answers },
+        body: { answers, restaurants: restaurantData },
       });
 
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
-      setRecommendations(data.recommendations);
+      setRecommendation(data.recommendation);
+      
+      // Find the matched restaurant from the list
+      if (data.recommendation.restaurantIndex !== undefined) {
+        setMatchedRestaurant(restaurants[data.recommendation.restaurantIndex]);
+      } else if (data.recommendation.restaurantName) {
+        const found = restaurants.find(r => 
+          r.name.toLowerCase() === data.recommendation.restaurantName.toLowerCase()
+        );
+        setMatchedRestaurant(found || null);
+      }
     } catch (error) {
       console.error('Quiz error:', error);
       toast({
@@ -113,53 +138,126 @@ const Find = () => {
   const resetQuiz = () => {
     setCurrentQuestion(0);
     setAnswers({});
-    setRecommendations(null);
+    setRecommendation(null);
+    setMatchedRestaurant(null);
+  };
+
+  const openDirections = (restaurant: typeof restaurants[0]) => {
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(restaurant.address)}`;
+    window.open(url, '_blank');
   };
 
   const isComplete = Object.keys(answers).length === QUIZ_QUESTIONS.length;
   const currentQ = QUIZ_QUESTIONS[currentQuestion];
 
   // Show results
-  if (recommendations) {
+  if (recommendation) {
     return (
       <div className="min-h-screen bg-gradient-subtle">
         <Header />
         
         <div className="max-w-4xl mx-auto px-4 py-8">
-          <Card className="shadow-warm">
-            <CardHeader className="text-center">
-              <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="w-8 h-8 text-primary-foreground" />
-              </div>
-              <CardTitle className="text-2xl">Your Perfect Picks!</CardTitle>
-              <p className="text-muted-foreground mt-2">
-                Based on your answers, here are cuisines you should try:
-              </p>
+          <Card className="shadow-warm overflow-hidden">
+            <CardHeader className="text-center bg-gradient-primary text-primary-foreground pb-8">
+              <div className="text-6xl mb-4">{recommendation.emoji}</div>
+              <CardTitle className="text-2xl">Your Perfect Match!</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {recommendations.map((rec, index) => (
-                <div
-                  key={index}
-                  className="p-4 rounded-xl bg-muted/50 border border-border hover:bg-muted transition-colors"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="text-4xl">{rec.emoji}</div>
-                    <div>
-                      <h3 className="font-semibold text-lg">{rec.cuisine}</h3>
-                      <p className="text-muted-foreground text-sm mt-1">{rec.reason}</p>
+            <CardContent className="pt-6 space-y-6">
+              {matchedRestaurant ? (
+                <>
+                  {/* Restaurant Card */}
+                  <div className="rounded-xl overflow-hidden border border-border">
+                    {matchedRestaurant.photoUrl && (
+                      <div className="h-48 overflow-hidden">
+                        <img 
+                          src={matchedRestaurant.photoUrl} 
+                          alt={matchedRestaurant.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="p-4 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-bold text-xl">{matchedRestaurant.name}</h3>
+                          {matchedRestaurant.cuisine && (
+                            <Badge variant="secondary" className="mt-1">
+                              {matchedRestaurant.cuisine}
+                            </Badge>
+                          )}
+                        </div>
+                        {matchedRestaurant.rating && (
+                          <div className="flex items-center gap-1 bg-primary/10 px-2 py-1 rounded-lg">
+                            <Star className="w-4 h-4 text-primary fill-primary" />
+                            <span className="font-semibold">{matchedRestaurant.rating}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                        <MapPin className="w-4 h-4" />
+                        <span>{matchedRestaurant.address}</span>
+                        <span className="text-primary font-medium">
+                          ({matchedRestaurant.distance} mi)
+                        </span>
+                      </div>
+
+                      {matchedRestaurant.description && (
+                        <p className="text-sm text-muted-foreground italic">
+                          {matchedRestaurant.description}
+                        </p>
+                      )}
                     </div>
                   </div>
-                </div>
-              ))}
-              
-              <Button
-                onClick={resetQuiz}
-                variant="outline"
-                className="w-full mt-6"
-              >
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Take Quiz Again
-              </Button>
+
+                  {/* Match Reason */}
+                  <div className="p-4 rounded-xl bg-muted/50 border border-border">
+                    <p className="text-center text-muted-foreground">
+                      {recommendation.matchReason}
+                    </p>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={() => openDirections(matchedRestaurant)}
+                      className="flex-1 bg-gradient-primary"
+                    >
+                      <Navigation className="w-4 h-4 mr-2" />
+                      Get Directions
+                    </Button>
+                    <Button
+                      onClick={resetQuiz}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Try Again
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Fallback: Cuisine suggestion */}
+                  <div className="text-center py-4">
+                    <h3 className="text-2xl font-bold mb-2">
+                      Try {recommendation.cuisine} cuisine!
+                    </h3>
+                    <p className="text-muted-foreground">
+                      {recommendation.matchReason}
+                    </p>
+                  </div>
+                  
+                  <Button
+                    onClick={resetQuiz}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Take Quiz Again
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -179,7 +277,9 @@ const Find = () => {
             </div>
             <CardTitle className="text-2xl">Restaurant Quiz</CardTitle>
             <p className="text-muted-foreground mt-2">
-              Answer a few questions and we will find your perfect cuisine!
+              {restaurants.length > 0 
+                ? `Answer a few questions and we will pick from ${restaurants.length} nearby restaurants!`
+                : "Answer a few questions and we will find your perfect cuisine!"}
             </p>
             
             {/* Progress bar */}
@@ -234,10 +334,10 @@ const Find = () => {
                   className="bg-gradient-primary"
                 >
                   {isLoading ? (
-                    'Finding matches...'
+                    'Finding your match...'
                   ) : (
                     <>
-                      Get My Results
+                      Find My Restaurant
                       <ChevronRight className="w-4 h-4 ml-2" />
                     </>
                   )}
