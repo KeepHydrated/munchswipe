@@ -733,14 +733,6 @@ const RandomPick = () => {
     <div className="min-h-screen bg-gradient-subtle">
       <Header />
       
-      {/* Filters Bar */}
-      <div className="max-w-4xl mx-auto px-4 pt-4 flex justify-end">
-        <RestaurantFilters 
-          excludedTypes={excludedTypes} 
-          onExcludedTypesChange={handleExcludedTypesChange} 
-        />
-      </div>
-      
       {/* API Usage Warning Banner */}
       {showUsageBanner && (
         <ApiUsageBanner onDismiss={() => setShowUsageBanner(false)} />
@@ -911,6 +903,13 @@ const RandomPick = () => {
                 <Card className="shadow-warm animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {selectedRestaurant.photoUrl ? (
                   <div className="relative w-full h-64 overflow-hidden rounded-t-lg">
+                    {/* Filter button in upper right */}
+                    <div className="absolute top-3 right-3 z-20">
+                      <RestaurantFilters 
+                        excludedTypes={excludedTypes} 
+                        onExcludedTypesChange={handleExcludedTypesChange} 
+                      />
+                    </div>
                     <img 
                       src={selectedRestaurant.photoUrl} 
                       alt={selectedRestaurant.name}
@@ -927,6 +926,13 @@ const RandomPick = () => {
                   </div>
                 ) : (
                   <div className="relative w-full h-64 bg-gradient-subtle flex items-center justify-center rounded-t-lg">
+                    {/* Filter button in upper right */}
+                    <div className="absolute top-3 right-3 z-20">
+                      <RestaurantFilters 
+                        excludedTypes={excludedTypes} 
+                        onExcludedTypesChange={handleExcludedTypesChange} 
+                      />
+                    </div>
                     <div className="text-center">
                       <ImageIcon className="w-16 h-16 mx-auto text-muted-foreground mb-2" />
                       <p className="text-muted-foreground text-sm">No image available</p>
