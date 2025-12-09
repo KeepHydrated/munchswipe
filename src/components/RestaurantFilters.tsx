@@ -22,27 +22,44 @@ export const FILTERABLE_TYPES = [
 
 export type FilterableType = typeof FILTERABLE_TYPES[number]['id'];
 
-// Common fast food chain names to detect (since Google sometimes miscategorizes them)
-export const FAST_FOOD_CHAINS = [
-  "mcdonald's", "burger king", "wendy's", "taco bell", "kfc", "popeyes", 
-  "chick-fil-a", "subway", "arby's", "sonic", "jack in the box", "hardee's",
-  "carl's jr", "five guys", "in-n-out", "whataburger", "white castle",
-  "checkers", "rally's", "del taco", "wingstop", "zaxby's", "raising cane's",
-  "panda express", "chipotle", "qdoba", "moe's southwest", "jersey mike's",
-  "jimmy john's", "firehouse subs", "potbelly", "panera", "dunkin'", 
-  "krispy kreme", "starbucks", "tim hortons", "dairy queen", "culver's",
-  "shake shack", "smashburger", "habit burger", "el pollo loco", "church's",
-  "bojangles", "cook out", "freddy's", "steak 'n shake", "waffle house",
-  "denny's", "ihop", "cracker barrel", "applebee's", "chili's", "tgi friday's",
-  "buffalo wild wings", "hooters", "wingstop", "papa john's", "domino's",
-  "pizza hut", "little caesars", "marco's pizza", "papa murphy's"
+// Common chain restaurant names to detect (normalized - no apostrophes)
+export const CHAIN_RESTAURANTS = [
+  // Fast food
+  "mcdonalds", "burger king", "wendys", "taco bell", "kfc", "popeyes", 
+  "chick-fil-a", "chickfila", "subway", "arbys", "sonic", "jack in the box", "hardees",
+  "carls jr", "five guys", "in-n-out", "whataburger", "white castle",
+  "checkers", "rallys", "del taco", "wingstop", "zaxbys", "raising canes",
+  "panda express", "chipotle", "qdoba", "moes southwest", "jersey mikes",
+  "jimmy johns", "firehouse subs", "potbelly", "panera", "dunkin", 
+  "krispy kreme", "starbucks", "tim hortons", "dairy queen", "culvers",
+  "shake shack", "smashburger", "habit burger", "el pollo loco", "churchs",
+  "bojangles", "cook out", "freddys", "steak n shake", "waffle house",
+  "dennys", "ihop", "cracker barrel", "applebees", "chilis", "tgi fridays",
+  "buffalo wild wings", "hooters", "papa johns", "dominos",
+  "pizza hut", "little caesars", "marcos pizza", "papa murphys",
+  // Casual dining chains
+  "red lobster", "olive garden", "outback", "longhorn", "texas roadhouse",
+  "golden corral", "red robin", "ruby tuesday", "bob evans", "perkins",
+  "friendly", "village inn", "cheddar", "bjs restaurant", "cheesecake factory",
+  "pf changs", "benihana", "yard house", "miller ale", "world of beer",
+  "wetzels", "auntie annes", "cinnabon", "jamba", "smoothie king",
+  "tropical smoothie", "noodles", "fazolis", "boston market", "el torito",
+  "on the border", "chevys", "baja fresh", "waba grill", "flame broiler"
 ];
 
-// Check if a restaurant name matches a known fast food chain
-export const isFastFoodChain = (name: string): boolean => {
-  const lowerName = name.toLowerCase();
-  return FAST_FOOD_CHAINS.some(chain => lowerName.includes(chain));
+// Normalize string for comparison (lowercase, remove apostrophes and special chars)
+const normalizeForComparison = (str: string): string => {
+  return str.toLowerCase().replace(/[''`]/g, '').replace(/\s+/g, ' ').trim();
 };
+
+// Check if a restaurant name matches a known chain
+export const isChainRestaurant = (name: string): boolean => {
+  const normalizedName = normalizeForComparison(name);
+  return CHAIN_RESTAURANTS.some(chain => normalizedName.includes(chain));
+};
+
+// Alias for backward compatibility
+export const isFastFoodChain = isChainRestaurant;
 
 interface RestaurantFiltersProps {
   excludedTypes: Set<FilterableType>;
