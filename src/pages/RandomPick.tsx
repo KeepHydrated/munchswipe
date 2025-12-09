@@ -20,6 +20,7 @@ import { Header } from '@/components/Header';
 import { AdCard } from '@/components/AdCard';
 import { useApiUsageTracker } from '@/hooks/useApiUsageTracker';
 import ApiUsageBanner from '@/components/ApiUsageBanner';
+import { RestaurantFilters, FilterableType, FILTERABLE_TYPES } from '@/components/RestaurantFilters';
 
 const RandomPick = () => {
   const { restaurants, setRestaurants, userLocation, setUserLocation } = useRestaurants();
@@ -38,6 +39,18 @@ const RandomPick = () => {
   });
   const [cardsSinceLastAd, setCardsSinceLastAd] = useState(0);
   const [showingAd, setShowingAd] = useState(false);
+  
+  // Filter state - persisted to localStorage
+  const [excludedTypes, setExcludedTypes] = useState<Set<FilterableType>>(() => {
+    const stored = localStorage.getItem('excludedRestaurantTypes');
+    return stored ? new Set(JSON.parse(stored)) : new Set();
+  });
+  
+  // Save filter preferences to localStorage
+  const handleExcludedTypesChange = (types: Set<FilterableType>) => {
+    setExcludedTypes(types);
+    localStorage.setItem('excludedRestaurantTypes', JSON.stringify([...types]));
+  };
   
   // Session and matching
   const { sessionId, partnerSessionId } = useSession();
@@ -218,6 +231,7 @@ const RandomPick = () => {
                     distance: parseFloat(distance.toFixed(1)),
                     rating: detailResult.rating,
                     cuisine: cuisine,
+                    types: detailResult.types || [],
                     phone: undefined,
                     website: undefined,
                     latitude: detailResult.geometry?.location?.lat() || userLocation.latitude,
@@ -452,9 +466,15 @@ const RandomPick = () => {
     setShowingAd(false);
     setCardsSinceLastAd(prev => prev + 1);
     
-    // First try to get open/opening soon restaurants
+    // Helper to check if restaurant matches any excluded type
+    const isExcludedType = (r: typeof restaurants[0]) => {
+      if (excludedTypes.size === 0) return false;
+      return r.types?.some(type => excludedTypes.has(type as FilterableType)) ?? false;
+    };
+    
+    // First try to get open/opening soon restaurants (excluding filtered types)
     const openOrOpeningSoon = restaurants.filter(r => 
-      isOpenOrOpeningSoon(r) && !hiddenRestaurants.has(r.id)
+      isOpenOrOpeningSoon(r) && !hiddenRestaurants.has(r.id) && !isExcludedType(r)
     );
     
     // Get restaurants not shown recently from OPEN pool first
@@ -487,9 +507,9 @@ const RandomPick = () => {
       return;
     }
     
-    // Only if NO open restaurants exist, fall back to closed ones
+    // Only if NO open restaurants exist, fall back to closed ones (excluding filtered types)
     const closedRestaurants = restaurants.filter(r => 
-      !isOpenOrOpeningSoon(r) && !hiddenRestaurants.has(r.id)
+      !isOpenOrOpeningSoon(r) && !hiddenRestaurants.has(r.id) && !isExcludedType(r)
     );
     
     if (closedRestaurants.length === 0) {
@@ -712,6 +732,14 @@ const RandomPick = () => {
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Header />
+      
+      {/* Filters Bar */}
+      <div className="max-w-4xl mx-auto px-4 pt-4 flex justify-end">
+        <RestaurantFilters 
+          excludedTypes={excludedTypes} 
+          onExcludedTypesChange={handleExcludedTypesChange} 
+        />
+      </div>
       
       {/* API Usage Warning Banner */}
       {showUsageBanner && (
