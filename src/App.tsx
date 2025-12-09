@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { RestaurantProvider } from "@/contexts/RestaurantContext";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import RandomPick from "./pages/RandomPick";
+import Find from "./pages/Find";
 import Likes from "./pages/Likes";
 import Matches from "./pages/Matches";
 import HiddenRestaurants from "./pages/HiddenRestaurants";
@@ -29,6 +30,7 @@ const App = () => (
           <AppContent />
           <Routes>
             <Route path="/" element={<RandomPick />} />
+            <Route path="/find" element={<Find />} />
             <Route path="/likes" element={<Likes />} />
             <Route path="/matches" element={<Matches />} />
             <Route path="/hidden" element={<HiddenRestaurants />} />

@@ -1,21 +1,31 @@
 import { Button } from '@/components/ui/button';
-import { Heart, UtensilsCrossed, Sparkles } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Heart, UtensilsCrossed, Sparkles, Search } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export const Header = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   return (
     <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border shadow-card">
       <div className="max-w-4xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/likes')}
-          >
-            <Heart className="h-4 w-4" />
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant={location.pathname === '/likes' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => navigate('/likes')}
+            >
+              <Heart className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={location.pathname === '/find' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => navigate('/find')}
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+          </div>
           <button 
             onClick={() => navigate('/')}
             className="flex items-center justify-center transition-transform hover:scale-105"
@@ -25,7 +35,7 @@ export const Header = () => {
             </div>
           </button>
           <Button
-            variant="outline"
+            variant={location.pathname === '/matches' ? 'default' : 'outline'}
             size="sm"
             onClick={() => navigate('/matches')}
           >
