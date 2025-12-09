@@ -11,6 +11,7 @@ import { Filter } from 'lucide-react';
 
 // Restaurant types that can be filtered out
 export const FILTERABLE_TYPES = [
+  { id: 'chains', label: 'Chain Restaurants', description: 'National & regional chains' },
   { id: 'fast_food_restaurant', label: 'Fast Food', description: 'Quick service restaurants' },
   { id: 'meal_takeaway', label: 'Takeaway Only', description: 'Takeout-focused places' },
   { id: 'cafe', label: 'Cafes', description: 'Coffee shops and cafes' },
