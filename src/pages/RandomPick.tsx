@@ -20,7 +20,7 @@ import { Header } from '@/components/Header';
 import { AdCard } from '@/components/AdCard';
 import { useApiUsageTracker } from '@/hooks/useApiUsageTracker';
 import ApiUsageBanner from '@/components/ApiUsageBanner';
-import { RestaurantFilters, FilterableType, FILTERABLE_TYPES } from '@/components/RestaurantFilters';
+import { RestaurantFilters, FilterableType, FILTERABLE_TYPES, isFastFoodChain } from '@/components/RestaurantFilters';
 
 const RandomPick = () => {
   const { restaurants, setRestaurants, userLocation, setUserLocation } = useRestaurants();
@@ -469,7 +469,14 @@ const RandomPick = () => {
     // Helper to check if restaurant matches any excluded type
     const isExcludedType = (r: typeof restaurants[0]) => {
       if (excludedTypes.size === 0) return false;
-      return r.types?.some(type => excludedTypes.has(type as FilterableType)) ?? false;
+      
+      // Check if it matches excluded types from Google
+      const matchesExcludedType = r.types?.some(type => excludedTypes.has(type as FilterableType)) ?? false;
+      
+      // If fast food filter is on, also check against known chain names
+      const isFastFoodFiltered = excludedTypes.has('fast_food_restaurant') && isFastFoodChain(r.name);
+      
+      return matchesExcludedType || isFastFoodFiltered;
     };
     
     // First try to get open/opening soon restaurants (excluding filtered types)
