@@ -255,30 +255,40 @@ const RandomPick = () => {
   };
 
   const getRandomRestaurant = () => {
-    // First filter for restaurants that are open now or opening soon AND not hidden
-    const openOrOpeningSoon = restaurants.filter(r => 
-      isOpenOrOpeningSoon(r) && !hiddenRestaurants.has(r.id)
-    );
+    // Filter for non-hidden restaurants
+    const nonHidden = restaurants.filter(r => !hiddenRestaurants.has(r.id));
     
-    if (openOrOpeningSoon.length === 0) {
+    if (nonHidden.length === 0) {
+      setSelectedRestaurant(null);
+      return;
+    }
+    
+    // Separate into confirmed open vs others
+    const confirmedOpen = nonHidden.filter(r => r.openNow === true);
+    const others = nonHidden.filter(r => r.openNow !== true && isOpenOrOpeningSoon(r));
+    
+    // Prioritize confirmed open restaurants, then fall back to others
+    const prioritizedPool = confirmedOpen.length > 0 ? confirmedOpen : others;
+    
+    if (prioritizedPool.length === 0) {
       setSelectedRestaurant(null);
       return;
     }
     
     // Get restaurants that haven't been shown recently
-    const availableRestaurants = openOrOpeningSoon.filter(
+    const availableRestaurants = prioritizedPool.filter(
       r => !recentlyShown.includes(r.id)
     );
     
     // If all restaurants have been shown, reset the history completely
     let poolToChooseFrom = availableRestaurants.length > 0 
       ? availableRestaurants 
-      : openOrOpeningSoon;
+      : prioritizedPool;
     
     // Safety check - if pool is still empty somehow, reset everything
     if (poolToChooseFrom.length === 0) {
       setRecentlyShown([]);
-      poolToChooseFrom = openOrOpeningSoon;
+      poolToChooseFrom = prioritizedPool;
     }
     
     // Pick a random restaurant from the available pool
@@ -294,8 +304,7 @@ const RandomPick = () => {
     }
     
     // Update recently shown list - keep longer history to avoid repeats
-    // Keep 80% of available restaurants in history, or at least 10
-    const maxHistory = Math.max(10, Math.floor(openOrOpeningSoon.length * 0.8));
+    const maxHistory = Math.max(10, Math.floor(prioritizedPool.length * 0.8));
     setRecentlyShown(prev => {
       const updated = [...prev, newRestaurant.id];
       return updated.slice(-maxHistory);
