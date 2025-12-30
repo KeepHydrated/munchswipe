@@ -126,6 +126,7 @@ const RandomPick = () => {
         rating?: number;
         cuisine?: string;
         openNow?: boolean;
+        photoUrl?: string;
       }>;
 
       const toRad = (n: number) => (n * Math.PI) / 180;
@@ -153,7 +154,7 @@ const RandomPick = () => {
           description: undefined,
           phone: undefined,
           website: undefined,
-          photoUrl: undefined,
+          photoUrl: r.photoUrl,
           distance: parseFloat(
             distanceMiles(
               userLocation.latitude,

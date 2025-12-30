@@ -135,6 +135,13 @@ serve(async (req) => {
       const types: string[] = Array.isArray(r?.types) ? r.types : [];
       const cuisine = types.map((t) => cuisineMap[t]).find(Boolean);
 
+      // Build photo URL from photo_reference if available
+      let photoUrl: string | undefined;
+      if (Array.isArray(r?.photos) && r.photos.length > 0 && r.photos[0]?.photo_reference) {
+        const photoRef = r.photos[0].photo_reference;
+        photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoRef}&key=${apiKey}`;
+      }
+
       return {
         id: r?.place_id ?? "",
         name: r?.name ?? "Unknown Restaurant",
@@ -144,6 +151,7 @@ serve(async (req) => {
         rating: typeof r?.rating === "number" ? r.rating : undefined,
         cuisine,
         openNow: r?.opening_hours?.open_now ?? undefined,
+        photoUrl,
       };
     });
 
