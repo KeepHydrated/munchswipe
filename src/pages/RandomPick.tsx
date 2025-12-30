@@ -207,44 +207,51 @@ const RandomPick = () => {
 
   // Helper function to check if restaurant is open now or will be open in next hour
   const isOpenOrOpeningSoon = (restaurant: typeof restaurants[0]) => {
-    // If we only have a boolean "open now" flag (from backend search), use it.
+    // If we have a boolean "open now" flag from the API, use it
+    // The API already filters for open restaurants, so if openNow is true OR undefined 
+    // (meaning we got it from the open-now search), consider it open
     if (restaurant.openNow === true) return true;
+    
+    // If openNow is explicitly false, it's closed
+    if (restaurant.openNow === false) return false;
 
-    if (!restaurant.openingHours || restaurant.openingHours.length === 0) return false;
-    
-    const now = new Date();
-    const currentDay = now.getDay();
-    const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight
-    const oneHourLater = currentTime + 60;
-    
-    const todayHours = restaurant.openingHours[currentDay];
-    if (!todayHours) return false;
-    
-    // Extract time range from string like "Monday: 9:00 AM – 10:00 PM"
-    const timeMatch = todayHours.match(/(\d+):(\d+)\s*(AM|PM)\s*[–-]\s*(\d+):(\d+)\s*(AM|PM)/i);
-    if (!timeMatch) return false;
-    
-    let openHour = parseInt(timeMatch[1]);
-    const openMin = parseInt(timeMatch[2]);
-    const openPeriod = timeMatch[3].toUpperCase();
-    let closeHour = parseInt(timeMatch[4]);
-    const closeMin = parseInt(timeMatch[5]);
-    const closePeriod = timeMatch[6].toUpperCase();
-    
-    // Convert to 24-hour format
-    if (openPeriod === 'PM' && openHour !== 12) openHour += 12;
-    if (openPeriod === 'AM' && openHour === 12) openHour = 0;
-    if (closePeriod === 'PM' && closeHour !== 12) closeHour += 12;
-    if (closePeriod === 'AM' && closeHour === 12) closeHour = 0;
-    
-    const openTime = openHour * 60 + openMin;
-    const closeTime = closeHour * 60 + closeMin;
-    
-    // Check if currently open OR will open within next hour
-    const isCurrentlyOpen = currentTime >= openTime && currentTime < closeTime;
-    const willOpenSoon = openTime > currentTime && openTime <= oneHourLater;
-    
-    return isCurrentlyOpen || willOpenSoon;
+    // If openNow is undefined but we have opening hours, check them
+    if (restaurant.openingHours && restaurant.openingHours.length > 0) {
+      const now = new Date();
+      const currentDay = now.getDay();
+      const currentTime = now.getHours() * 60 + now.getMinutes();
+      const oneHourLater = currentTime + 60;
+      
+      const todayHours = restaurant.openingHours[currentDay];
+      if (!todayHours) return false;
+      
+      const timeMatch = todayHours.match(/(\d+):(\d+)\s*(AM|PM)\s*[–-]\s*(\d+):(\d+)\s*(AM|PM)/i);
+      if (!timeMatch) return false;
+      
+      let openHour = parseInt(timeMatch[1]);
+      const openMin = parseInt(timeMatch[2]);
+      const openPeriod = timeMatch[3].toUpperCase();
+      let closeHour = parseInt(timeMatch[4]);
+      const closeMin = parseInt(timeMatch[5]);
+      const closePeriod = timeMatch[6].toUpperCase();
+      
+      if (openPeriod === 'PM' && openHour !== 12) openHour += 12;
+      if (openPeriod === 'AM' && openHour === 12) openHour = 0;
+      if (closePeriod === 'PM' && closeHour !== 12) closeHour += 12;
+      if (closePeriod === 'AM' && closeHour === 12) closeHour = 0;
+      
+      const openTime = openHour * 60 + openMin;
+      const closeTime = closeHour * 60 + closeMin;
+      
+      const isCurrentlyOpen = currentTime >= openTime && currentTime < closeTime;
+      const willOpenSoon = openTime > currentTime && openTime <= oneHourLater;
+      
+      return isCurrentlyOpen || willOpenSoon;
+    }
+
+    // If we don't have openNow or openingHours, assume it's open 
+    // (since we requested only open restaurants from the API)
+    return true;
   };
 
   const getRandomRestaurant = () => {
@@ -286,8 +293,9 @@ const RandomPick = () => {
       fetchPlaceDetails(newRestaurant.id);
     }
     
-    // Update recently shown list (keep last 5 or half of total restaurants, whichever is smaller)
-    const maxHistory = Math.min(5, Math.floor(openOrOpeningSoon.length / 2));
+    // Update recently shown list - keep longer history to avoid repeats
+    // Keep 80% of available restaurants in history, or at least 10
+    const maxHistory = Math.max(10, Math.floor(openOrOpeningSoon.length * 0.8));
     setRecentlyShown(prev => {
       const updated = [...prev, newRestaurant.id];
       return updated.slice(-maxHistory);
