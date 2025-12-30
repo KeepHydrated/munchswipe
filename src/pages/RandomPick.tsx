@@ -14,7 +14,6 @@ import { useSession } from '@/hooks/useSession';
 import { useMatches } from '@/hooks/useMatches';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { loadGoogleMaps } from '@/lib/googleMapsLoader';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 
@@ -25,7 +24,6 @@ const RandomPick = () => {
   const [recentlyShown, setRecentlyShown] = useState<string[]>([]);
   const [showHours, setShowHours] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleMapsApiKey] = useState('AIzaSyASk-OpxAIgawBXmdyFi-C7QMMPFDq7jlU');
   const [hiddenRestaurants, setHiddenRestaurants] = useState<Set<string>>(() => {
     const stored = localStorage.getItem('hiddenRestaurants');
     return stored ? new Set(JSON.parse(stored)) : new Set();
@@ -101,213 +99,100 @@ const RandomPick = () => {
       return;
     }
 
-    if (typeof google === 'undefined' || !google.maps || !google.maps.geometry) {
-      console.log('Google Maps not loaded yet');
-      return;
-    }
-
     console.log('Starting restaurant search at:', userLocation);
     setLoading(true);
-    
+
     try {
-      const location = new google.maps.LatLng(userLocation.latitude, userLocation.longitude);
-      const map = new google.maps.Map(document.createElement('div'));
-      
-      const service = new google.maps.places.PlacesService(map);
-      const request = {
-        location: location,
-        radius: 8047,
-        type: 'restaurant',
-        openNow: true
+      const { data, error } = await supabase.functions.invoke('places-nearby', {
+        body: {
+          latitude: userLocation.latitude,
+          longitude: userLocation.longitude,
+          radiusMeters: 8047,
+          openNow: true,
+        },
+      });
+
+      if (error) {
+        console.error('Backend places-nearby error:', error);
+        throw error;
+      }
+
+      const results = (data?.results ?? []) as Array<{
+        id: string;
+        name: string;
+        address: string;
+        latitude: number;
+        longitude: number;
+        rating?: number;
+        cuisine?: string;
+        openNow?: boolean;
+      }>;
+
+      const toRad = (n: number) => (n * Math.PI) / 180;
+      const distanceMiles = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        const R = 3958.8; // Earth radius in miles
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+        return 2 * R * Math.asin(Math.sqrt(a));
       };
 
-      const processPlaceDetails = async (places: google.maps.places.PlaceResult[]) => {
-        const detailedRestaurants: any[] = [];
-        
-        for (const place of places) {
-          if (!place.place_id) continue;
-          
-          await new Promise<void>((resolve) => {
-            service.getDetails(
-              {
-                placeId: place.place_id!,
-                fields: ['name', 'types', 'rating', 'opening_hours', 'photos', 'vicinity', 'geometry', 'editorial_summary']
-              },
-              (detailResult, detailStatus) => {
-                if (detailStatus === google.maps.places.PlacesServiceStatus.OK && detailResult) {
-                  const distance = detailResult.geometry?.location 
-                    ? google.maps.geometry.spherical.computeDistanceBetween(
-                        location,
-                        detailResult.geometry.location
-                      ) * 0.000621371
-                    : 0;
+      const mapped = results
+        .map((r) => ({
+          id: r.id,
+          name: r.name,
+          address: r.address,
+          latitude: r.latitude,
+          longitude: r.longitude,
+          rating: r.rating,
+          cuisine: r.cuisine,
+          openNow: r.openNow,
+          openingHours: undefined,
+          description: undefined,
+          phone: undefined,
+          website: undefined,
+          photoUrl: undefined,
+          distance: parseFloat(
+            distanceMiles(
+              userLocation.latitude,
+              userLocation.longitude,
+              r.latitude,
+              r.longitude,
+            ).toFixed(1),
+          ),
+        }))
+        .sort((a, b) => a.distance - b.distance);
 
-                  let photoUrl: string | undefined;
-                  if (detailResult.photos && detailResult.photos.length > 0) {
-                    try {
-                      photoUrl = detailResult.photos[0].getUrl({ maxWidth: 800, maxHeight: 600 });
-                    } catch (error) {
-                      console.error(`Error getting photo for ${detailResult.name}:`, error);
-                    }
-                  }
-
-                  const openNow = detailResult.opening_hours?.isOpen?.() ?? detailResult.opening_hours?.open_now;
-                  const openingHours = detailResult.opening_hours?.weekday_text;
-
-                  const cuisineMap: Record<string, string> = {
-                    'american_restaurant': 'American',
-                    'bakery': 'Bakery',
-                    'bar': 'Bar',
-                    'barbecue_restaurant': 'Barbecue',
-                    'brazilian_restaurant': 'Brazilian',
-                    'breakfast_restaurant': 'Breakfast',
-                    'brunch_restaurant': 'Brunch',
-                    'cafe': 'Cafe',
-                    'chinese_restaurant': 'Chinese',
-                    'coffee_shop': 'Coffee Shop',
-                    'fast_food_restaurant': 'Fast Food',
-                    'french_restaurant': 'French',
-                    'greek_restaurant': 'Greek',
-                    'hamburger_restaurant': 'Burger',
-                    'ice_cream_shop': 'Ice Cream',
-                    'indian_restaurant': 'Indian',
-                    'indonesian_restaurant': 'Indonesian',
-                    'italian_restaurant': 'Italian',
-                    'japanese_restaurant': 'Japanese',
-                    'korean_restaurant': 'Korean',
-                    'lebanese_restaurant': 'Lebanese',
-                    'mediterranean_restaurant': 'Mediterranean',
-                    'mexican_restaurant': 'Mexican',
-                    'middle_eastern_restaurant': 'Middle Eastern',
-                    'pizza_restaurant': 'Pizza',
-                    'ramen_restaurant': 'Ramen',
-                    'sandwich_shop': 'Sandwiches',
-                    'seafood_restaurant': 'Seafood',
-                    'spanish_restaurant': 'Spanish',
-                    'steak_house': 'Steakhouse',
-                    'sushi_restaurant': 'Sushi',
-                    'thai_restaurant': 'Thai',
-                    'turkish_restaurant': 'Turkish',
-                    'vegan_restaurant': 'Vegan',
-                    'vegetarian_restaurant': 'Vegetarian',
-                    'vietnamese_restaurant': 'Vietnamese'
-                  };
-
-                  let cuisine: string | undefined;
-                  if (detailResult.types) {
-                    for (const type of detailResult.types) {
-                      if (cuisineMap[type]) {
-                        cuisine = cuisineMap[type];
-                        break;
-                      }
-                    }
-                  }
-
-                  detailedRestaurants.push({
-                    id: detailResult.place_id || place.place_id || '',
-                    name: detailResult.name || 'Unknown Restaurant',
-                    address: detailResult.vicinity || place.vicinity || '',
-                    distance: parseFloat(distance.toFixed(1)),
-                    rating: detailResult.rating,
-                    cuisine: cuisine,
-                    phone: undefined,
-                    website: undefined,
-                    latitude: detailResult.geometry?.location?.lat() || userLocation.latitude,
-                    longitude: detailResult.geometry?.location?.lng() || userLocation.longitude,
-                    photoUrl,
-                    openNow,
-                    openingHours,
-                    description: (detailResult as any).editorial_summary?.overview,
-                  });
-                }
-                resolve();
-              }
-            );
-          });
-          
-          await new Promise(resolve => setTimeout(resolve, 50));
-        }
-        
-        return detailedRestaurants.sort((a, b) => a.distance - b.distance);
-      };
-
-      let allResults: google.maps.places.PlaceResult[] = [];
-      let isFirstBatch = true;
-      
-      const processResults = async (results: google.maps.places.PlaceResult[] | null, status: google.maps.places.PlacesServiceStatus, pagination: google.maps.places.PlaceSearchPagination | null) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-          allResults = [...allResults, ...results];
-          
-          // Process and show first batch immediately
-          if (isFirstBatch) {
-            isFirstBatch = false;
-            const firstBatch = await processPlaceDetails(results.slice(0, 10));
-            setRestaurants(firstBatch);
-            setLoading(false);
-            
-            // Continue loading more in background
-            if (pagination?.hasNextPage) {
-              setTimeout(() => {
-                pagination.nextPage();
-              }, 1000);
-            } else if (results.length > 10) {
-              // Process remaining from first batch
-              const remaining = await processPlaceDetails(results.slice(10));
-              setRestaurants([...firstBatch, ...remaining].sort((a, b) => a.distance - b.distance));
-            }
-          } else {
-            // Background loading - add more restaurants
-            const newBatch = await processPlaceDetails(results);
-            const updatedRestaurants = [...restaurants, ...newBatch].sort((a, b) => a.distance - b.distance);
-            setRestaurants(updatedRestaurants);
-            
-            if (pagination?.hasNextPage && allResults.length < 60) {
-              setTimeout(() => {
-                pagination.nextPage();
-              }, 1000);
-            }
-          }
-        } else {
-          console.error('Places API error status:', status);
-          setLoading(false);
-          toast({
-            title: "Search Error",
-            description: `Could not find restaurants. Please try again.`,
-            variant: "destructive",
-          });
-        }
-      };
-
-      service.nearbySearch(request, processResults);
+      setRestaurants(mapped as any);
     } catch (error) {
       console.error('Error in fetchRestaurants:', error);
-      setLoading(false);
       toast({
-        title: "Error",
-        description: "Failed to fetch restaurants. Please try again.",
-        variant: "destructive",
+        title: 'Search Error',
+        description:
+          'Could not find restaurants. Please confirm billing + Places API are enabled for your key and try again.',
+        variant: 'destructive',
       });
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Initialize Google Maps, get location, and fetch restaurants on mount
+  // Initialize location on mount
   useEffect(() => {
     const initializeRestaurants = async () => {
-      // Load Google Maps API first
-      await loadGoogleMaps(googleMapsApiKey);
-      
-      // Get location if we don't have it
       if (!userLocation) {
         await getCurrentLocation();
       }
     };
-    
+
     initializeRestaurants();
   }, []);
 
   // Fetch restaurants when location is available and we don't have restaurants
   useEffect(() => {
-    if (userLocation && restaurants.length === 0 && typeof google !== 'undefined') {
+    if (userLocation && restaurants.length === 0) {
       fetchRestaurants();
     }
   }, [userLocation, restaurants.length]);
@@ -319,6 +204,9 @@ const RandomPick = () => {
 
   // Helper function to check if restaurant is open now or will be open in next hour
   const isOpenOrOpeningSoon = (restaurant: typeof restaurants[0]) => {
+    // If we only have a boolean "open now" flag (from backend search), use it.
+    if (restaurant.openNow === true) return true;
+
     if (!restaurant.openingHours || restaurant.openingHours.length === 0) return false;
     
     const now = new Date();
