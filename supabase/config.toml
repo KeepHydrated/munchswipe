@@ -2,3 +2,6 @@ project_id = "kbhlpuvjunhuxosusfwa"
 
 [functions.places-nearby]
 verify_jwt = false
+
+[functions.place-details]
+verify_jwt = false

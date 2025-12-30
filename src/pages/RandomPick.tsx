@@ -31,6 +31,8 @@ const RandomPick = () => {
   const [showInstructions, setShowInstructions] = useState(() => {
     return !localStorage.getItem('hasSeenInstructions');
   });
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [detailsCache, setDetailsCache] = useState<Record<string, any>>({});
   
   // Session and matching
   const { sessionId, partnerSessionId } = useSession();
@@ -277,6 +279,12 @@ const RandomPick = () => {
     const newRestaurant = poolToChooseFrom[randomIndex];
     
     setSelectedRestaurant(newRestaurant);
+    setShowHours(false);
+    
+    // Fetch details (opening hours, description, etc.) if not cached
+    if (!detailsCache[newRestaurant.id]) {
+      fetchPlaceDetails(newRestaurant.id);
+    }
     
     // Update recently shown list (keep last 5 or half of total restaurants, whichever is smaller)
     const maxHistory = Math.min(5, Math.floor(openOrOpeningSoon.length / 2));
@@ -284,6 +292,47 @@ const RandomPick = () => {
       const updated = [...prev, newRestaurant.id];
       return updated.slice(-maxHistory);
     });
+  };
+
+  // Fetch detailed place info (opening hours, etc.)
+  const fetchPlaceDetails = async (placeId: string) => {
+    if (detailsCache[placeId]) return;
+    
+    setLoadingDetails(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('place-details', {
+        body: { placeId },
+      });
+
+      if (error) {
+        console.error('place-details error:', error);
+        return;
+      }
+
+      const result = data?.result;
+      if (result) {
+        setDetailsCache(prev => ({ ...prev, [placeId]: result }));
+        
+        // Update the selected restaurant with the new details
+        setSelectedRestaurant(prev => {
+          if (prev?.id === placeId) {
+            return {
+              ...prev,
+              openingHours: result.openingHours,
+              description: result.description,
+              phone: result.phone,
+              website: result.website,
+              photoUrl: prev.photoUrl || result.photoUrl,
+            };
+          }
+          return prev;
+        });
+      }
+    } catch (e) {
+      console.error('fetchPlaceDetails error:', e);
+    } finally {
+      setLoadingDetails(false);
+    }
   };
 
   // Touch handlers for swipe
@@ -631,6 +680,14 @@ const RandomPick = () => {
                       <div className="flex items-center space-x-3">
                         <Star className="w-5 h-5 text-primary flex-shrink-0" fill="currentColor" />
                         <p className="text-lg font-semibold">{selectedRestaurant.rating} / 5</p>
+                      </div>
+                    )}
+
+                    {/* Opening Hours Section */}
+                    {loadingDetails && !selectedRestaurant.openingHours && (
+                      <div className="flex items-center space-x-3">
+                        <Clock className="w-5 h-5 text-muted-foreground" />
+                        <p className="text-muted-foreground text-sm">Loading hours...</p>
                       </div>
                     )}
 
