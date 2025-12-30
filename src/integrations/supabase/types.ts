@@ -23,7 +23,6 @@ export type Database = {
           ip_address: string | null
           page_path: string
           referrer: string | null
-          region: string | null
           session_id: string | null
           user_agent: string | null
         }
@@ -35,7 +34,6 @@ export type Database = {
           ip_address?: string | null
           page_path: string
           referrer?: string | null
-          region?: string | null
           session_id?: string | null
           user_agent?: string | null
         }
@@ -47,7 +45,6 @@ export type Database = {
           ip_address?: string | null
           page_path?: string
           referrer?: string | null
-          region?: string | null
           session_id?: string | null
           user_agent?: string | null
         }

@@ -23,7 +23,6 @@ export const usePageTracking = () => {
           user_agent: navigator.userAgent,
           country: geoData.country_name || null,
           city: geoData.city || null,
-          region: geoData.region || null,
           ip_address: geoData.ip || null,
         });
       } catch (error) {

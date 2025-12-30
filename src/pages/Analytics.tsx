@@ -3,15 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Globe, Users, Eye, MapPin, Calendar, TrendingUp } from 'lucide-react';
-import { startOfDay, startOfWeek, startOfMonth, subDays, isAfter } from 'date-fns';
+import { Globe, Users, Eye, MapPin } from 'lucide-react';
 
 interface PageView {
   id: string;
   page_path: string;
   country: string | null;
   city: string | null;
-  region: string | null;
   created_at: string;
 }
 
@@ -20,11 +18,6 @@ interface Stats {
   uniqueSessions: number;
   topPages: { page: string; views: number }[];
   topCountries: { country: string; views: number }[];
-  topStates: { state: string; views: number }[];
-  viewsToday: number;
-  viewsLastWeek: number;
-  viewsLastMonth: number;
-  viewsAllTime: number;
 }
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
@@ -35,11 +28,6 @@ const Analytics = () => {
     uniqueSessions: 0,
     topPages: [],
     topCountries: [],
-    topStates: [],
-    viewsToday: 0,
-    viewsLastWeek: 0,
-    viewsLastMonth: 0,
-    viewsAllTime: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -57,26 +45,6 @@ const Analytics = () => {
           // Calculate stats
           const totalViews = pageViews.length;
           const uniqueSessions = new Set(pageViews.map((pv: PageView) => pv.id)).size;
-
-          // Calculate time-based views
-          const now = new Date();
-          const todayStart = startOfDay(now);
-          const weekStart = startOfWeek(subDays(now, 7));
-          const monthStart = startOfMonth(subDays(now, 30));
-
-          const viewsToday = pageViews.filter((pv: PageView) => 
-            isAfter(new Date(pv.created_at), todayStart)
-          ).length;
-
-          const viewsLastWeek = pageViews.filter((pv: PageView) => 
-            isAfter(new Date(pv.created_at), weekStart)
-          ).length;
-
-          const viewsLastMonth = pageViews.filter((pv: PageView) => 
-            isAfter(new Date(pv.created_at), monthStart)
-          ).length;
-
-          const viewsAllTime = pageViews.length;
 
           // Top pages
           const pageCount: Record<string, number> = {};
@@ -100,28 +68,11 @@ const Analytics = () => {
             .sort((a, b) => b.views - a.views)
             .slice(0, 5);
 
-          // Top US states
-          const stateCount: Record<string, number> = {};
-          pageViews.forEach((pv: PageView) => {
-            if (pv.region && pv.country === 'United States') {
-              stateCount[pv.region] = (stateCount[pv.region] || 0) + 1;
-            }
-          });
-          const topStates = Object.entries(stateCount)
-            .map(([state, views]) => ({ state, views }))
-            .sort((a, b) => b.views - a.views)
-            .slice(0, 10);
-
           setStats({
             totalViews,
             uniqueSessions,
             topPages,
             topCountries,
-            topStates,
-            viewsToday,
-            viewsLastWeek,
-            viewsLastMonth,
-            viewsAllTime,
           });
         }
       } catch (error) {
@@ -150,53 +101,6 @@ const Analytics = () => {
       <Header />
       <div className="max-w-6xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8 text-foreground">Analytics Dashboard</h1>
-
-        {/* Time-based Views */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Today</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.viewsToday}</div>
-              <p className="text-xs text-muted-foreground">views today</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Last Week</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.viewsLastWeek}</div>
-              <p className="text-xs text-muted-foreground">views last 7 days</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Last Month</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.viewsLastMonth}</div>
-              <p className="text-xs text-muted-foreground">views last 30 days</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">All Time</CardTitle>
-              <Eye className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.viewsAllTime}</div>
-              <p className="text-xs text-muted-foreground">total views</p>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -242,7 +146,7 @@ const Analytics = () => {
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Top Pages Chart */}
           <Card>
             <CardHeader>
@@ -300,32 +204,6 @@ const Analytics = () => {
             </CardContent>
           </Card>
         </div>
-
-        {/* US States Chart */}
-        {stats.topStates.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Visitors by US State</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={stats.topStates} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis type="number" stroke="hsl(var(--foreground))" />
-                  <YAxis dataKey="state" type="category" stroke="hsl(var(--foreground))" width={100} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                    }}
-                  />
-                  <Bar dataKey="views" fill="hsl(var(--primary))" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );

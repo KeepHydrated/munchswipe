@@ -17,10 +17,6 @@ import { toast } from '@/hooks/use-toast';
 import { loadGoogleMaps } from '@/lib/googleMapsLoader';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
-import { AdCard } from '@/components/AdCard';
-import { useApiUsageTracker } from '@/hooks/useApiUsageTracker';
-import ApiUsageBanner from '@/components/ApiUsageBanner';
-import { RestaurantFilters, FilterableType, FILTERABLE_TYPES, isFastFoodChain } from '@/components/RestaurantFilters';
 
 const RandomPick = () => {
   const { restaurants, setRestaurants, userLocation, setUserLocation } = useRestaurants();
@@ -29,7 +25,7 @@ const RandomPick = () => {
   const [recentlyShown, setRecentlyShown] = useState<string[]>([]);
   const [showHours, setShowHours] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleMapsApiKey, setGoogleMapsApiKey] = useState<string | null>(null);
+  const [googleMapsApiKey] = useState('AIzaSyASk-OpxAIgawBXmdyFi-C7QMMPFDq7jlU');
   const [hiddenRestaurants, setHiddenRestaurants] = useState<Set<string>>(() => {
     const stored = localStorage.getItem('hiddenRestaurants');
     return stored ? new Set(JSON.parse(stored)) : new Set();
@@ -37,28 +33,10 @@ const RandomPick = () => {
   const [showInstructions, setShowInstructions] = useState(() => {
     return !localStorage.getItem('hasSeenInstructions');
   });
-  const [cardsSinceLastAd, setCardsSinceLastAd] = useState(0);
-  const [showingAd, setShowingAd] = useState(false);
-  
-  // Filter state - persisted to localStorage
-  const [excludedTypes, setExcludedTypes] = useState<Set<FilterableType>>(() => {
-    const stored = localStorage.getItem('excludedRestaurantTypes');
-    return stored ? new Set(JSON.parse(stored)) : new Set();
-  });
-  
-  // Save filter preferences to localStorage
-  const handleExcludedTypesChange = (types: Set<FilterableType>) => {
-    setExcludedTypes(types);
-    localStorage.setItem('excludedRestaurantTypes', JSON.stringify([...types]));
-  };
   
   // Session and matching
   const { sessionId, partnerSessionId } = useSession();
   const { matchedRestaurantIds } = useMatches(sessionId, partnerSessionId);
-  
-  // API usage tracking
-  const { trackNearbySearch, trackPlaceDetails } = useApiUsageTracker();
-  const [showUsageBanner, setShowUsageBanner] = useState(true);
   
   // Swipe state
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
@@ -139,7 +117,8 @@ const RandomPick = () => {
       const request = {
         location: location,
         radius: 8047,
-        type: 'restaurant'
+        type: 'restaurant',
+        openNow: true
       };
 
       const processPlaceDetails = async (places: google.maps.places.PlaceResult[]) => {
@@ -231,7 +210,6 @@ const RandomPick = () => {
                     distance: parseFloat(distance.toFixed(1)),
                     rating: detailResult.rating,
                     cuisine: cuisine,
-                    types: detailResult.types || [],
                     phone: undefined,
                     website: undefined,
                     latitude: detailResult.geometry?.location?.lat() || userLocation.latitude,
@@ -248,11 +226,6 @@ const RandomPick = () => {
           });
           
           await new Promise(resolve => setTimeout(resolve, 50));
-        }
-        
-        // Track Place Details API usage
-        if (detailedRestaurants.length > 0) {
-          trackPlaceDetails(detailedRestaurants.length);
         }
         
         return detailedRestaurants.sort((a, b) => a.distance - b.distance);
@@ -306,7 +279,6 @@ const RandomPick = () => {
       };
 
       service.nearbySearch(request, processResults);
-      trackNearbySearch(); // Track API usage
     } catch (error) {
       console.error('Error in fetchRestaurants:', error);
       setLoading(false);
@@ -318,35 +290,19 @@ const RandomPick = () => {
     }
   };
 
-  // Fetch API key and initialize Google Maps
+  // Initialize Google Maps, get location, and fetch restaurants on mount
   useEffect(() => {
-    const fetchApiKeyAndInit = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('get-google-maps-key');
-        
-        if (error || !data?.apiKey) {
-          console.error('Failed to get API key:', error);
-          toast({
-            title: "Configuration Error",
-            description: "Could not load Google Maps. Please try again later.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        setGoogleMapsApiKey(data.apiKey);
-        await loadGoogleMaps(data.apiKey);
-        
-        // Get location if we don't have it
-        if (!userLocation) {
-          await getCurrentLocation();
-        }
-      } catch (err) {
-        console.error('Error initializing:', err);
+    const initializeRestaurants = async () => {
+      // Load Google Maps API first
+      await loadGoogleMaps(googleMapsApiKey);
+      
+      // Get location if we don't have it
+      if (!userLocation) {
+        await getCurrentLocation();
       }
     };
     
-    fetchApiKeyAndInit();
+    initializeRestaurants();
   }, []);
 
   // Fetch restaurants when location is available and we don't have restaurants
@@ -400,147 +356,41 @@ const RandomPick = () => {
     return isCurrentlyOpen || willOpenSoon;
   };
 
-  // Helper function to calculate hours until opening
-  const getHoursUntilOpening = (restaurant: typeof restaurants[0]) => {
-    if (!restaurant.openingHours || restaurant.openingHours.length === 0) return null;
-    
-    const now = new Date();
-    const currentDay = now.getDay();
-    const currentTime = now.getHours() * 60 + now.getMinutes();
-    
-    // Check each day starting from today
-    for (let i = 0; i < 7; i++) {
-      const dayIndex = (currentDay + i) % 7;
-      const dayHours = restaurant.openingHours[dayIndex];
-      
-      if (!dayHours) continue;
-      
-      // Handle "Open 24 hours"
-      if (dayHours.includes('Open 24 hours')) {
-        return 0;
-      }
-      
-      const timeMatch = dayHours.match(/(\d+):(\d+)\s*(AM|PM)\s*[–-]\s*(\d+):(\d+)\s*(AM|PM)/i);
-      if (!timeMatch) continue;
-      
-      let openHour = parseInt(timeMatch[1]);
-      const openMin = parseInt(timeMatch[2]);
-      const openPeriod = timeMatch[3].toUpperCase();
-      
-      // Convert to 24-hour format
-      if (openPeriod === 'PM' && openHour !== 12) openHour += 12;
-      if (openPeriod === 'AM' && openHour === 12) openHour = 0;
-      
-      const openTime = openHour * 60 + openMin;
-      
-      // If checking today
-      if (i === 0) {
-        if (openTime > currentTime) {
-          const minutesUntil = openTime - currentTime;
-          return Math.round(minutesUntil / 60 * 10) / 10; // Round to 1 decimal
-        }
-      } else {
-        // For future days, calculate total hours
-        const minutesLeftToday = (24 * 60) - currentTime;
-        const minutesInBetweenDays = (i - 1) * 24 * 60;
-        const minutesUntilOpen = openTime;
-        const totalMinutes = minutesLeftToday + minutesInBetweenDays + minutesUntilOpen;
-        return Math.round(totalMinutes / 60 * 10) / 10;
-      }
-    }
-    
-    return null;
-  };
-
   const getRandomRestaurant = () => {
-    // Check if we should show an ad (every 10 cards)
-    const shouldShowAd = cardsSinceLastAd >= 10;
-    
-    if (shouldShowAd) {
-      setShowingAd(true);
-      setCardsSinceLastAd(0);
-      setSelectedRestaurant(null);
-      return;
-    }
-    
-    setShowingAd(false);
-    setCardsSinceLastAd(prev => prev + 1);
-    
-    // Helper to check if restaurant matches any excluded type
-    const isExcludedType = (r: typeof restaurants[0]) => {
-      if (excludedTypes.size === 0) return false;
-      
-      // Check if it matches excluded types from Google
-      const matchesExcludedType = r.types?.some(type => excludedTypes.has(type as FilterableType)) ?? false;
-      
-      // If chains filter is on, check against known chain names
-      const isChainsFiltered = excludedTypes.has('chains') && isFastFoodChain(r.name);
-      
-      // If fast food filter is on, also check against known fast food chain names
-      const isFastFoodFiltered = excludedTypes.has('fast_food_restaurant') && isFastFoodChain(r.name);
-      
-      return matchesExcludedType || isChainsFiltered || isFastFoodFiltered;
-    };
-    
-    // First try to get open/opening soon restaurants (excluding filtered types)
+    // First filter for restaurants that are open now or opening soon AND not hidden
     const openOrOpeningSoon = restaurants.filter(r => 
-      isOpenOrOpeningSoon(r) && !hiddenRestaurants.has(r.id) && !isExcludedType(r)
+      isOpenOrOpeningSoon(r) && !hiddenRestaurants.has(r.id)
     );
     
-    // Get restaurants not shown recently from OPEN pool first
-    const openNotRecentlyShown = openOrOpeningSoon.filter(
-      r => !recentlyShown.includes(r.id)
-    );
-    
-    // If we have open restaurants not recently shown, use those
-    if (openNotRecentlyShown.length > 0) {
-      const randomIndex = Math.floor(Math.random() * openNotRecentlyShown.length);
-      const newRestaurant = openNotRecentlyShown[randomIndex];
-      
-      setSelectedRestaurant(newRestaurant);
-      
-      const maxHistory = Math.min(5, Math.floor(openOrOpeningSoon.length / 2));
-      setRecentlyShown(prev => {
-        const updated = [...prev, newRestaurant.id];
-        return updated.slice(-maxHistory);
-      });
-      return;
-    }
-    
-    // If all open restaurants were recently shown, show them again
-    if (openOrOpeningSoon.length > 0) {
-      const randomIndex = Math.floor(Math.random() * openOrOpeningSoon.length);
-      const newRestaurant = openOrOpeningSoon[randomIndex];
-      
-      setSelectedRestaurant(newRestaurant);
-      setRecentlyShown([]); // Reset history since we're cycling through again
-      return;
-    }
-    
-    // Only if NO open restaurants exist, fall back to closed ones (excluding filtered types)
-    const closedRestaurants = restaurants.filter(r => 
-      !isOpenOrOpeningSoon(r) && !hiddenRestaurants.has(r.id) && !isExcludedType(r)
-    );
-    
-    if (closedRestaurants.length === 0) {
+    if (openOrOpeningSoon.length === 0) {
       setSelectedRestaurant(null);
       return;
     }
     
-    const closedNotRecentlyShown = closedRestaurants.filter(
+    // Get restaurants that haven't been shown recently
+    const availableRestaurants = openOrOpeningSoon.filter(
       r => !recentlyShown.includes(r.id)
     );
     
-    const poolToChooseFrom = closedNotRecentlyShown.length > 0 
-      ? closedNotRecentlyShown 
-      : closedRestaurants;
+    // If all restaurants have been shown, reset the history completely
+    let poolToChooseFrom = availableRestaurants.length > 0 
+      ? availableRestaurants 
+      : openOrOpeningSoon;
     
+    // Safety check - if pool is still empty somehow, reset everything
+    if (poolToChooseFrom.length === 0) {
+      setRecentlyShown([]);
+      poolToChooseFrom = openOrOpeningSoon;
+    }
+    
+    // Pick a random restaurant from the available pool
     const randomIndex = Math.floor(Math.random() * poolToChooseFrom.length);
     const newRestaurant = poolToChooseFrom[randomIndex];
     
     setSelectedRestaurant(newRestaurant);
     
-    const maxHistory = Math.min(5, Math.floor(closedRestaurants.length / 2));
+    // Update recently shown list (keep last 5 or half of total restaurants, whichever is smaller)
+    const maxHistory = Math.min(5, Math.floor(openOrOpeningSoon.length / 2));
     setRecentlyShown(prev => {
       const updated = [...prev, newRestaurant.id];
       return updated.slice(-maxHistory);
@@ -571,12 +421,6 @@ const RandomPick = () => {
   };
 
   const handleSwipe = async (liked: boolean) => {
-    // If swiping an ad, just move to next card
-    if (showingAd) {
-      getRandomRestaurant();
-      return;
-    }
-    
     if (!selectedRestaurant || !sessionId) return;
 
     // Save swipe to database
@@ -597,32 +441,7 @@ const RandomPick = () => {
   };
 
   const handleTouchEnd = () => {
-    if (!touchStart || !touchCurrent) {
-      setIsSwiping(false);
-      setTouchStart(null);
-      setTouchCurrent(null);
-      return;
-    }
-    
-    // If showing ad, don't allow down swipe (hide), only horizontal swipes
-    if (showingAd) {
-      const deltaX = touchCurrent.x - touchStart.x;
-      const deltaY = touchCurrent.y - touchStart.y;
-      const absDeltaX = Math.abs(deltaX);
-      const absDeltaY = Math.abs(deltaY);
-      
-      // Only allow horizontal swipes for ads
-      if (absDeltaX > 80 && absDeltaX > absDeltaY * 1.2) {
-        getRandomRestaurant();
-      }
-      
-      setIsSwiping(false);
-      setTouchStart(null);
-      setTouchCurrent(null);
-      return;
-    }
-    
-    if (!selectedRestaurant) {
+    if (!touchStart || !touchCurrent || !selectedRestaurant) {
       setIsSwiping(false);
       setTouchStart(null);
       setTouchCurrent(null);
@@ -742,14 +561,9 @@ const RandomPick = () => {
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Header />
-      
-      {/* API Usage Warning Banner */}
-      {showUsageBanner && (
-        <ApiUsageBanner onDismiss={() => setShowUsageBanner(false)} />
-      )}
 
       {/* Instructions Overlay */}
-      {showInstructions && (selectedRestaurant || showingAd) && (
+      {showInstructions && selectedRestaurant && (
         <div 
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-fade-in"
           onClick={dismissInstructions}
@@ -811,7 +625,7 @@ const RandomPick = () => {
               </p>
             </CardContent>
           </Card>
-        ) : !selectedRestaurant && !showingAd ? (
+        ) : !selectedRestaurant ? (
           <Card className="shadow-warm">
             <CardContent className="text-center py-12">
               <Clock className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
@@ -823,43 +637,7 @@ const RandomPick = () => {
           </Card>
         ) : (
           <div className="space-y-8">
-            {/* Ad Card */}
-            {showingAd && (
-              <div 
-                className="relative"
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-                style={getSwipeTransform()}
-              >
-                {/* Swipe overlays for ad */}
-                <div 
-                  className="absolute inset-0 z-10 pointer-events-none rounded-lg flex items-center justify-center"
-                  style={{ 
-                    opacity: touchStart && touchCurrent && (touchCurrent.x - touchStart.x) > 0 ? getOverlayOpacity() : 0 
-                  }}
-                >
-                  <div className="bg-primary/90 text-white px-8 py-4 rounded-lg text-2xl font-bold rotate-[-20deg]">
-                    <span>Next →</span>
-                  </div>
-                </div>
-                <div 
-                  className="absolute inset-0 z-10 pointer-events-none rounded-lg flex items-center justify-center"
-                  style={{ 
-                    opacity: touchStart && touchCurrent && (touchCurrent.x - touchStart.x) < 0 ? getOverlayOpacity() : 0 
-                  }}
-                >
-                  <div className="bg-primary/90 text-white px-8 py-4 rounded-lg text-2xl font-bold rotate-[20deg]">
-                    <span>Next →</span>
-                  </div>
-                </div>
-
-                <AdCard className="animate-in fade-in slide-in-from-bottom-4 duration-500" />
-              </div>
-            )}
-            
-            {/* Restaurant Card */}
-            {selectedRestaurant && !showingAd && (
+            {selectedRestaurant && (
               <div 
                 className="relative"
                 onTouchStart={handleTouchStart}
@@ -911,38 +689,30 @@ const RandomPick = () => {
                 )}
 
                 <Card className="shadow-warm animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {selectedRestaurant.photoUrl ? (
                   <div className="relative w-full h-64 overflow-hidden rounded-t-lg">
-                    {/* Filter button in upper right */}
-                    <div className="absolute top-3 right-3 z-20">
-                      <RestaurantFilters 
-                        excludedTypes={excludedTypes} 
-                        onExcludedTypesChange={handleExcludedTypesChange} 
-                      />
-                    </div>
-                    {selectedRestaurant.photoUrl ? (
-                      <img 
-                        src={selectedRestaurant.photoUrl} 
-                        alt={selectedRestaurant.name}
-                        className="w-full h-full object-cover"
-                        onLoad={() => console.log('Image loaded successfully:', selectedRestaurant.photoUrl)}
-                        onError={(e) => {
-                          console.error('Image failed to load:', selectedRestaurant.photoUrl);
-                          e.currentTarget.style.display = 'none';
-                          const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                          if (fallback) fallback.style.display = 'flex';
-                        }}
-                      />
-                    ) : null}
-                    <div 
-                      className="w-full h-full bg-gradient-subtle items-center justify-center absolute inset-0 -z-10"
-                      style={{ display: selectedRestaurant.photoUrl ? 'none' : 'flex' }}
-                    >
-                      <div className="text-center">
-                        <ImageIcon className="w-16 h-16 mx-auto text-muted-foreground mb-2" />
-                        <p className="text-muted-foreground text-sm">No image available</p>
-                      </div>
+                    <img 
+                      src={selectedRestaurant.photoUrl} 
+                      alt={selectedRestaurant.name}
+                      className="w-full h-full object-cover"
+                      onLoad={() => console.log('Image loaded successfully:', selectedRestaurant.photoUrl)}
+                      onError={(e) => {
+                        console.error('Image failed to load:', selectedRestaurant.photoUrl);
+                        const parent = e.currentTarget.parentElement;
+                        if (parent) {
+                          parent.innerHTML = '<div class="w-full h-full bg-gradient-subtle flex items-center justify-center"><div class="text-center"><svg class="w-16 h-16 mx-auto text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg><p class="text-muted-foreground mt-2 text-sm">No image available</p></div></div>';
+                        }
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="relative w-full h-64 bg-gradient-subtle flex items-center justify-center rounded-t-lg">
+                    <div className="text-center">
+                      <ImageIcon className="w-16 h-16 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-muted-foreground text-sm">No image available</p>
                     </div>
                   </div>
+                )}
                 <CardHeader className="text-center pb-4">
                   <CardTitle className="text-3xl">{selectedRestaurant.name}</CardTitle>
                   {selectedRestaurant.cuisine && (
@@ -985,31 +755,26 @@ const RandomPick = () => {
                       const todayHours = selectedRestaurant.openingHours[currentDay];
                       
                       if (todayHours) {
-                        // Check if open 24 hours
-                        if (todayHours.includes('Open 24 hours')) {
-                          isOpen = true;
-                        } else {
-                          // Extract time range from string like "Monday: 9:00 AM – 10:00 PM"
-                          const timeMatch = todayHours.match(/(\d+):(\d+)\s*(AM|PM)\s*[–-]\s*(\d+):(\d+)\s*(AM|PM)/i);
-                          if (timeMatch) {
-                            let openHour = parseInt(timeMatch[1]);
-                            const openMin = parseInt(timeMatch[2]);
-                            const openPeriod = timeMatch[3].toUpperCase();
-                            let closeHour = parseInt(timeMatch[4]);
-                            const closeMin = parseInt(timeMatch[5]);
-                            const closePeriod = timeMatch[6].toUpperCase();
-                            
-                            // Convert to 24-hour format
-                            if (openPeriod === 'PM' && openHour !== 12) openHour += 12;
-                            if (openPeriod === 'AM' && openHour === 12) openHour = 0;
-                            if (closePeriod === 'PM' && closeHour !== 12) closeHour += 12;
-                            if (closePeriod === 'AM' && closeHour === 12) closeHour = 0;
-                            
-                            const openTime = openHour * 60 + openMin;
-                            const closeTime = closeHour * 60 + closeMin;
-                            
-                            isOpen = currentTime >= openTime && currentTime < closeTime;
-                          }
+                        // Extract time range from string like "Monday: 9:00 AM – 10:00 PM"
+                        const timeMatch = todayHours.match(/(\d+):(\d+)\s*(AM|PM)\s*[–-]\s*(\d+):(\d+)\s*(AM|PM)/i);
+                        if (timeMatch) {
+                          let openHour = parseInt(timeMatch[1]);
+                          const openMin = parseInt(timeMatch[2]);
+                          const openPeriod = timeMatch[3].toUpperCase();
+                          let closeHour = parseInt(timeMatch[4]);
+                          const closeMin = parseInt(timeMatch[5]);
+                          const closePeriod = timeMatch[6].toUpperCase();
+                          
+                          // Convert to 24-hour format
+                          if (openPeriod === 'PM' && openHour !== 12) openHour += 12;
+                          if (openPeriod === 'AM' && openHour === 12) openHour = 0;
+                          if (closePeriod === 'PM' && closeHour !== 12) closeHour += 12;
+                          if (closePeriod === 'AM' && closeHour === 12) closeHour = 0;
+                          
+                          const openTime = openHour * 60 + openMin;
+                          const closeTime = closeHour * 60 + closeMin;
+                          
+                          isOpen = currentTime >= openTime && currentTime < closeTime;
                         }
                       }
 
@@ -1045,8 +810,6 @@ const RandomPick = () => {
                         groupedHours.push({ days: daysLabel, hours: currentGroup.hours });
                       }
 
-                      const hoursUntilOpen = !isOpen ? getHoursUntilOpening(selectedRestaurant) : null;
-
                       return (
                         <div className="space-y-2">
                           <button 
@@ -1054,16 +817,9 @@ const RandomPick = () => {
                             className="flex items-center space-x-2 w-full hover:opacity-80 transition-opacity"
                           >
                             <Clock className="w-5 h-5 text-muted-foreground" />
-                            <div className="flex-1 text-left">
-                              <h3 className={`font-semibold ${isOpen ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
-                                Currently {isOpen ? 'Open' : 'Closed'}
-                              </h3>
-                              {!isOpen && hoursUntilOpen !== null && (
-                                <p className="text-sm text-muted-foreground">
-                                  Opens in {hoursUntilOpen < 1 ? `${Math.round(hoursUntilOpen * 60)} minutes` : `${hoursUntilOpen} ${hoursUntilOpen === 1 ? 'hour' : 'hours'}`}
-                                </p>
-                              )}
-                            </div>
+                            <h3 className={`font-semibold ${isOpen ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
+                              Currently {isOpen ? 'Open' : 'Closed'}
+                            </h3>
                             <ChevronDown 
                               className={`w-4 h-4 text-muted-foreground transition-transform ${showHours ? 'rotate-180' : ''}`} 
                             />
@@ -1147,12 +903,12 @@ const RandomPick = () => {
                     <Navigation className="w-4 h-4 mr-2" />
                     Get Directions
                   </Button>
-                 </CardContent>
-               </Card>
-               </div>
-             )}
-           </div>
-         )}
+                </CardContent>
+              </Card>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

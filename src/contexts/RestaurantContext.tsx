@@ -7,7 +7,6 @@ interface Restaurant {
   distance: number;
   rating?: number;
   cuisine?: string;
-  types?: string[];
   phone?: string;
   website?: string;
   latitude: number;
